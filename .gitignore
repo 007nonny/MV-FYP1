@@ -1,0 +1,25 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+*.so
+
+# Model files (large)
+models/*.pt
+
+# Dataset (large)
+dataset/
+*.zip
+
+# Uploads
+php-webapp/uploads/
+
+# Logs
+*.log
+/tmp/
+
+# OS
+.DS_Store
+Thumbs.db

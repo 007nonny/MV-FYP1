@@ -1,0 +1,7 @@
+{
+  "Benign": 0,
+  "TrojanBanker": 1,
+  "TrojanDownloader": 2,
+  "TrojanDropper": 3,
+  "TrojanSpy": 4
+}
