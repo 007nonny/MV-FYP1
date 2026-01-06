@@ -48,7 +48,7 @@ async def analyze(file: UploadFile = File(...)):
             pred_idx = pred_idx.item()
 
         # Confidence threshold for unknown malware detection
-        CONFIDENCE_THRESHOLD = 0.70  # 70% confidence required
+        CONFIDENCE_THRESHOLD = 0.50  # 50% confidence required (lowered for better detection)
         
         if confidence < CONFIDENCE_THRESHOLD:
             trojan_type = "Unknown"

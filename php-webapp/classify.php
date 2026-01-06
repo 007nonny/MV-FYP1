@@ -37,6 +37,8 @@ if (!empty($preloadedImage) && file_exists($preloadedImage)) {
     }
     
     if (move_uploaded_file($_FILES["imageToAnalyze"]["tmp_name"], $targetFile)) {
+        // SECURITY: Remove all executable permissions
+        chmod($targetFile, 0444); // Read-only, no execute
         $fileToAnalyze = $targetFile;
     } else {
         header("Location: analyze.php?error=upload");

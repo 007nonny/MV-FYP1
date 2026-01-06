@@ -47,6 +47,9 @@ $fileName = basename($_FILES["fileToUpload"]["name"]);
 $targetFile = $targetDir . $fileName;
 
 if (move_uploaded_file($_FILES["fileToUpload"]["tmp_name"], $targetFile)) {
+    // SECURITY: Remove all executable permissions from uploaded file
+    chmod($targetFile, 0444); // Read-only, no execute permissions
+    
     // Convert to image
     $convertedImage = $targetDir . pathinfo($fileName, PATHINFO_FILENAME) . "_viz.png";
     $converterScript = "/opt/lampp/htdocs/malware/convert_file_to_image.py";
