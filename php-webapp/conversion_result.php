@@ -1,12 +1,27 @@
 <?php
-ini_set('display_errors', 1);
-error_reporting(E_ALL);
+require_once 'security.php';
+require_once 'config.php';
 
+startSecureSession();
+setSecurityHeaders();
+
+// Sanitize and validate image path to prevent path traversal
 $imagePath = $_GET['image'] ?? '';
-if (empty($imagePath) || !file_exists($imagePath)) {
+if (empty($imagePath)) {
+    logSecurityEvent('missing_image_parameter');
     header("Location: index.php?error=noresult");
     exit;
 }
+
+// Validate that path is within uploads directory
+$safePath = sanitizeFilePath($imagePath, UPLOAD_DIR);
+if ($safePath === false || !file_exists($safePath)) {
+    logSecurityEvent('path_traversal_attempt', ['attempted_path' => $imagePath]);
+    header("Location: index.php?error=invalid");
+    exit;
+}
+
+$imagePath = $safePath;
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -41,15 +56,17 @@ if (empty($imagePath) || !file_exists($imagePath)) {
         <div class="results-section">
             <h3>Generated Visualization</h3>
             <div style="text-align: center; padding: 2rem;">
-                <img src="<?php echo htmlspecialchars($imagePath); ?>" alt="Malware Visualization" style="max-width: 100%; max-height: 600px; border-radius: 8px; border: 2px solid #444;">
+                <img src="<?php echo h(basename($imagePath)); ?>" alt="Malware Visualization" style="max-width: 100%; max-height: 600px; border-radius: 8px; border: 2px solid #444;">
             </div>
             
             <div class="action-buttons">
                 <form action="analyze.php" method="post" style="display: inline;">
-                    <input type="hidden" name="image_path" value="<?php echo htmlspecialchars($imagePath); ?>">
+                    <?php $csrfToken = generateCSRFToken(); ?>
+                    <input type="hidden" name="csrf_token" value="<?php echo h($csrfToken); ?>">
+                    <input type="hidden" name="image_path" value="<?php echo h($imagePath); ?>">
                     <button type="submit" class="btn btn-primary">🔍 Analyze This Image</button>
                 </form>
-                <a href="<?php echo htmlspecialchars($imagePath); ?>" download class="btn btn-secondary">💾 Download Image</a>
+                <a href="<?php echo h(basename($imagePath)); ?>" download class="btn btn-secondary">💾 Download Image</a>
                 <a href="index.php" class="btn btn-secondary">🔄 Convert Another File</a>
             </div>
         </div>

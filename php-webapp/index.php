@@ -1,7 +1,8 @@
 <?php
-ini_set('display_errors', 1);
-ini_set('display_startup_errors', 1);
-error_reporting(E_ALL);
+require_once 'security.php';
+startSecureSession();
+setSecurityHeaders();
+$csrfToken = generateCSRFToken();
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -43,6 +44,7 @@ error_reporting(E_ALL);
                 <div class="upload-icon">📄🔒</div>
                 <h3>Upload Your File</h3>
                 <form action="convert.php" method="post" enctype="multipart/form-data" id="uploadForm">
+                    <input type="hidden" name="csrf_token" value="<?php echo h($csrfToken); ?>">
                     <div class="file-input-wrapper">
                         <input type="file" name="fileToUpload" id="fileInput" required>
                         <label for="fileInput" class="file-input-label">Drag & Drop or Browse</label>

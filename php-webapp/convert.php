@@ -1,7 +1,22 @@
 <?php
-// Handles file to image conversion
-ini_set('display_errors', 1);
-error_reporting(E_ALL);
+// Handles file to image conversion with security measures
+require_once 'security.php';
+require_once 'config.php';
+
+startSecureSession();
+setSecurityHeaders();
+
+// Check rate limiting
+if (!checkRateLimit('file_conversion', 10, 300)) {
+    logSecurityEvent('rate_limit_exceeded', ['action' => 'file_conversion']);
+    die("<script>alert('Too many requests. Please wait before trying again.'); window.location.href='index.php';</script>");
+}
+
+// Validate CSRF token
+if (!isset($_POST['csrf_token']) || !validateCSRFToken($_POST['csrf_token'])) {
+    logSecurityEvent('csrf_token_invalid', ['action' => 'file_conversion']);
+    die("<script>alert('Invalid security token'); window.location.href='index.php';</script>");
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -33,51 +48,74 @@ error_reporting(E_ALL);
 <?php
 flush();
 
-$targetDir = "uploads/";
-if (!is_dir($targetDir)) {
-    mkdir($targetDir, 0777, true);
+// Create secure upload directory
+if (!is_dir(UPLOAD_DIR)) {
+    mkdir(UPLOAD_DIR, 0750, true); // Secure permissions
 }
 
 if (!isset($_FILES["fileToUpload"])) {
+    logSecurityEvent('no_file_uploaded');
     echo "<script>alert('No file uploaded'); window.location.href='index.php';</script>";
     exit;
 }
 
-$fileName = basename($_FILES["fileToUpload"]["name"]);
-$targetFile = $targetDir . $fileName;
+// Validate uploaded file
+$validation = validateUploadedFile(
+    $_FILES["fileToUpload"],
+    array_merge(ALLOWED_IMAGE_TYPES, ALLOWED_BINARY_TYPES),
+    MAX_FILE_SIZE
+);
+
+if (!$validation['valid']) {
+    logSecurityEvent('file_validation_failed', ['errors' => $validation['errors']]);
+    echo "<script>alert('File validation failed: " . implode(', ', $validation['errors']) . "'); window.location.href='index.php';</script>";
+    exit;
+}
+
+// Generate safe filename to prevent directory traversal
+$safeFileName = generateSafeFilename($_FILES["fileToUpload"]["name"]);
+$targetFile = UPLOAD_DIR . $safeFileName;
 
 if (move_uploaded_file($_FILES["fileToUpload"]["tmp_name"], $targetFile)) {
     // SECURITY: Remove all executable permissions from uploaded file
-    chmod($targetFile, 0444); // Read-only, no execute permissions
+    chmod($targetFile, 0440); // Read-only, no execute permissions
     
     // Convert to image
-    $convertedImage = $targetDir . pathinfo($fileName, PATHINFO_FILENAME) . "_viz.png";
-    $converterScript = "/opt/lampp/htdocs/malware/convert_file_to_image.py";
+    $convertedImage = UPLOAD_DIR . pathinfo($safeFileName, PATHINFO_FILENAME) . "_viz.png";
+    $converterScript = "/home/kali/Desktop/FYP1/MalwareImageRecognitionFYP1/convert_file_to_image.py";
     
-    // Use the Python from the virtual environment that has numpy/PIL already installed
+    // Use the Python from the virtual environment
     $pythonPath = "/home/kali/Desktop/FYP1/MalwareImageRecognitionFYP1/ml-service/.venv/bin/python3";
     
-    // Make sure uploads directory is writable
-    chmod($targetDir, 0777);
+    // Validate script exists
+    if (!file_exists($converterScript) || !file_exists($pythonPath)) {
+        logSecurityEvent('converter_script_missing');
+        echo "<div class='container' style='margin-top: 2rem;'>";
+        echo "<div class='alert alert-error'><h3>❌ Configuration Error</h3></div></div>";
+        exit;
+    }
     
-    // Fix: Use system libraries instead of LAMPP's old ones
-    // This prevents the CXXABI version conflict
-    $cmd = "LD_LIBRARY_PATH=/usr/lib/x86_64-linux-gnu:$LD_LIBRARY_PATH " . 
-           escapeshellarg($pythonPath) . " " . escapeshellarg($converterScript) . " " . 
-           escapeshellarg($targetFile) . " " . 
-           escapeshellarg($convertedImage) . " 2>&1";
+    // Build command with proper escaping - NO user input in command
+    $cmd = sprintf(
+        "LD_LIBRARY_PATH=/usr/lib/x86_64-linux-gnu:$LD_LIBRARY_PATH %s %s %s %s 2>&1",
+        escapeshellarg($pythonPath),
+        escapeshellarg($converterScript),
+        escapeshellarg($targetFile),
+        escapeshellarg($convertedImage)
+    );
+    
     $output = shell_exec($cmd);
     
     if (file_exists($convertedImage)) {
-        // Success - redirect to conversion result page with image path
-        echo "<script>window.location.href='conversion_result.php?image=" . urlencode($convertedImage) . "';</script>";
+        // Success - redirect to conversion result page
+        echo "<script>window.location.href='conversion_result.php?image=" . urlencode(basename($convertedImage)) . "';</script>";
         exit;
     } else {
+        logSecurityEvent('conversion_failed', ['output' => substr($output, 0, 500)]);
         echo "<div class='container' style='margin-top: 2rem;'>";
         echo "<div class='alert alert-error'>";
         echo "<h3>❌ Conversion Failed</h3>";
-        echo "<p>Unable to convert file to image. Details:</p>";
-        echo "<pre style='background: #000; padding: 1rem; border-radius: 4px; overflow-x: auto;'>" . htmlspecialchars($output) . "</pre>";
+        echo "<p>Unable to convert file to image.</p>";
         echo "<a href='index.php' class='btn btn-primary' style='margin-top: 1rem;'>Try Again</a>";
         echo "</div></div>";
         exit;

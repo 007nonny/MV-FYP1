@@ -1,11 +1,29 @@
 <?php
-ini_set('display_errors', 1);
-error_reporting(E_ALL);
+require_once 'security.php';
+require_once 'config.php';
 
-require 'config.php';
+startSecureSession();
+setSecurityHeaders();
 
 // Check if coming from conversion result
-$preloadedImage = $_POST['image_path'] ?? '';
+$preloadedImage = '';
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // Validate CSRF token
+    if (!isset($_POST['csrf_token']) || !validateCSRFToken($_POST['csrf_token'])) {
+        logSecurityEvent('csrf_token_invalid', ['action' => 'analyze_preload']);
+        die("<script>alert('Invalid security token'); window.location.href='index.php';</script>");
+    }
+    
+    // Sanitize preloaded image path
+    if (isset($_POST['image_path'])) {
+        $safePath = sanitizeFilePath($_POST['image_path'], UPLOAD_DIR);
+        if ($safePath !== false) {
+            $preloadedImage = $safePath;
+        }
+    }
+}
+
+$csrfToken = generateCSRFToken();
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -46,8 +64,9 @@ $preloadedImage = $_POST['image_path'] ?? '';
                     Upload an image generated from the converter or your own malware visualization
                 </p>
                 <form action="classify.php" method="post" enctype="multipart/form-data" id="classifyForm">
+                    <input type="hidden" name="csrf_token" value="<?php echo h($csrfToken); ?>">
                     <?php if (!empty($preloadedImage)): ?>
-                        <input type="hidden" name="preloaded_image" value="<?php echo htmlspecialchars($preloadedImage); ?>">
+                        <input type="hidden" name="preloaded_image" value="<?php echo h($preloadedImage); ?>">
                         <p style="color: #4caf50; margin: 1rem 0;">✓ Image from conversion loaded</p>
                     <?php endif; ?>
                     
@@ -68,7 +87,7 @@ $preloadedImage = $_POST['image_path'] ?? '';
             <div class="preview-box" id="previewBox">
                 <h3>Image Preview</h3>
                 <?php if (!empty($preloadedImage)): ?>
-                    <img src="<?php echo htmlspecialchars($preloadedImage); ?>" alt="Preview" class="preview-image" id="previewImage">
+                    <img src="<?php echo h(basename($preloadedImage)); ?>" alt="Preview" class="preview-image" id="previewImage">
                 <?php else: ?>
                     <p style="color: #666; margin-top: 1rem;">Upload an image to preview</p>
                 <?php endif; ?>
@@ -94,13 +113,13 @@ $preloadedImage = $_POST['image_path'] ?? '';
                     echo "<tbody>";
                     
                     while ($row = $result->fetch_assoc()) {
-                        $severityClass = 'severity-' . strtolower($row['severity']);
+                        $severityClass = 'severity-' . strtolower(preg_replace('/[^a-z0-9-]/', '', strtolower($row['severity'])));
                         echo "<tr>";
-                        echo "<td>" . $row['id'] . "</td>";
-                        echo "<td>" . htmlspecialchars(basename($row['filename'])) . "</td>";
-                        echo "<td><strong>" . htmlspecialchars($row['trojan_type']) . "</strong></td>";
-                        echo "<td class='$severityClass'><strong>" . strtoupper($row['severity']) . "</strong></td>";
-                        echo "<td>" . date('Y-m-d H:i:s', strtotime($row['uploaded_at'])) . "</td>";
+                        echo "<td>" . intval($row['id']) . "</td>";
+                        echo "<td>" . h(basename($row['filename'])) . "</td>";
+                        echo "<td><strong>" . h($row['trojan_type']) . "</strong></td>";
+                        echo "<td class='" . h($severityClass) . "'><strong>" . h(strtoupper($row['severity'])) . "</strong></td>";
+                        echo "<td>" . h(date('Y-m-d H:i:s', strtotime($row['uploaded_at']))) . "</td>";
                         echo "</tr>";
                     }
                     
