@@ -8,8 +8,8 @@ import os
 from tqdm import tqdm
 
 # ---- Configuration ----
-DATA_DIR = "/home/kali/Desktop/FYP1/MalwareImageRecognitionFYP1/dataset/train"  # Your dataset folder
-TEST_DIR = "/home/kali/Desktop/FYP1/MalwareImageRecognitionFYP1/dataset/test"   # Optional test folder
+DATA_DIR = "/home/kali/Desktop/FYP1/MalwareImageRecognitionFYP1/Dataset-1/malimg_paper_dataset_imgs"  # Your dataset folder
+TEST_DIR = "/home/kali/Desktop/FYP1/MalwareImageRecognitionFYP1/Dataset-1/test"   # Optional test folder
 MODEL_SAVE_PATH = "/home/kali/Desktop/FYP1/MalwareImageRecognitionFYP1/models/model.pt"
 LABELS_SAVE_PATH = "/home/kali/Desktop/FYP1/MalwareImageRecognitionFYP1/models/labels.json"
 BATCH_SIZE = 32
@@ -20,6 +20,7 @@ IMG_SIZE = 224
 # ---- Data transforms ----
 train_transform = transforms.Compose([
     transforms.Resize((IMG_SIZE, IMG_SIZE)),
+    transforms.Grayscale(num_output_channels=3),  # Convert grayscale to 3-channel RGB
     transforms.RandomHorizontalFlip(),
     transforms.RandomRotation(10),
     transforms.ToTensor(),
@@ -28,6 +29,7 @@ train_transform = transforms.Compose([
 
 test_transform = transforms.Compose([
     transforms.Resize((IMG_SIZE, IMG_SIZE)),
+    transforms.Grayscale(num_output_channels=3),  # Convert grayscale to 3-channel RGB
     transforms.ToTensor(),
     transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
 ])

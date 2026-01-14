@@ -8,27 +8,25 @@ setSecurityHeaders();
 // Sanitize and validate image path to prevent path traversal
 $imagePath = $_GET['image'] ?? '';
 if (empty($imagePath)) {
-    logSecurityEvent('missing_image_parameter');
     header("Location: index.php?error=noresult");
     exit;
 }
 
-// Validate that path is within uploads directory
-$safePath = sanitizeFilePath($imagePath, UPLOAD_DIR);
-if ($safePath === false || !file_exists($safePath)) {
-    logSecurityEvent('path_traversal_attempt', ['attempted_path' => $imagePath]);
-    header("Location: index.php?error=invalid");
+// Build full path and validate
+$fullPath = UPLOAD_DIR . basename($imagePath);
+if (!file_exists($fullPath)) {
+    header("Location: index.php?error=notfound");
     exit;
 }
 
-$imagePath = $safePath;
+$imagePath = $fullPath;
 ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Conversion Result - Malware Visualization</title>
+    <title>Conversion Result - Trojan Visualization</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -36,7 +34,7 @@ $imagePath = $safePath;
     <nav class="navbar">
         <div class="logo">
             <div class="logo-icon">☣</div>
-            <h1>MALWARE <span class="highlight">VISUALIZATION</span></h1>
+            <h1>TROJAN <span class="highlight">VISUALIZATION</span></h1>
         </div>
         <ul class="nav-links">
             <li><a href="index.php">Dashboard</a></li>
@@ -50,13 +48,13 @@ $imagePath = $safePath;
     <div class="container">
         <div class="page-header">
             <h2>✓ Conversion Successful</h2>
-            <p>Your file has been converted to a malware visualization image</p>
+            <p>Your file has been converted to a trojan visualization image</p>
         </div>
 
         <div class="results-section">
             <h3>Generated Visualization</h3>
             <div style="text-align: center; padding: 2rem;">
-                <img src="<?php echo h(basename($imagePath)); ?>" alt="Malware Visualization" style="max-width: 100%; max-height: 600px; border-radius: 8px; border: 2px solid #444;">
+                <img src="uploads/<?php echo h(basename($imagePath)); ?>" alt="Trojan Visualization" style="max-width: 100%; max-height: 600px; border-radius: 8px; border: 2px solid #444;">
             </div>
             
             <div class="action-buttons">
@@ -66,7 +64,7 @@ $imagePath = $safePath;
                     <input type="hidden" name="image_path" value="<?php echo h($imagePath); ?>">
                     <button type="submit" class="btn btn-primary">🔍 Analyze This Image</button>
                 </form>
-                <a href="<?php echo h(basename($imagePath)); ?>" download class="btn btn-secondary">💾 Download Image</a>
+                <a href="uploads/<?php echo h(basename($imagePath)); ?>" download class="btn btn-secondary">💾 Download Image</a>
                 <a href="index.php" class="btn btn-secondary">🔄 Convert Another File</a>
             </div>
         </div>

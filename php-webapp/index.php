@@ -10,7 +10,7 @@ $csrfToken = generateCSRFToken();
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document to Image Converter - Malware Visualization</title>
+    <title>Executable to Image Converter - Trojan Visualization</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -18,7 +18,7 @@ $csrfToken = generateCSRFToken();
     <nav class="navbar">
         <div class="logo">
             <div class="logo-icon">☣</div>
-            <h1>MALWARE <span class="highlight">VISUALIZATION</span></h1>
+            <h1>TROJAN <span class="highlight">VISUALIZATION</span></h1>
         </div>
         <ul class="nav-links">
             <li><a href="index.php" class="active">Dashboard</a></li>
@@ -33,8 +33,8 @@ $csrfToken = generateCSRFToken();
     <div class="container">
         <!-- Page Header -->
         <div class="page-header">
-            <h2>Document to Image Converter</h2>
-            <p>Transform Malicious Documents into Visual Images</p>
+            <h2>Executable to Image Converter</h2>
+            <p>Transform Trojan Executables into Visual Images</p>
         </div>
 
         <!-- Upload Section -->
@@ -50,7 +50,7 @@ $csrfToken = generateCSRFToken();
                         <label for="fileInput" class="file-input-label">Drag & Drop or Browse</label>
                     </div>
                     <p class="supported-formats">
-                        <strong>Supported Formats:</strong> Any file type (.exe, .dll, .pdf, .txt, .doc, etc.)
+                        <strong>Supported Formats:</strong> Executable files (.exe, .dll, .bin, .dat, .sys, .com)
                     </p>
                     <button type="submit" class="btn btn-primary">Convert to Image</button>
                 </form>
@@ -67,8 +67,8 @@ $csrfToken = generateCSRFToken();
         <div class="info-cards">
             <div class="info-card">
                 <div class="info-card-icon">🎨</div>
-                <h3>Visualizing Malware</h3>
-                <p>Convert documents into images to reveal hidden threats.</p>
+                <h3>Visualizing Trojans</h3>
+                <p>Convert executables into images to reveal hidden threats.</p>
             </div>
             <div class="info-card">
                 <div class="info-card-icon">🔍</div>

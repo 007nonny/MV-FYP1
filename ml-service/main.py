@@ -47,27 +47,36 @@ async def analyze(file: UploadFile = File(...)):
             confidence = confidence.item()
             pred_idx = pred_idx.item()
 
-        # Confidence threshold for unknown malware detection
-        CONFIDENCE_THRESHOLD = 0.50  # 50% confidence required (lowered for better detection)
+        # Confidence threshold for detection
+        CONFIDENCE_THRESHOLD = 0.50  # 50% confidence required
+        
+        confidence_pct = f"{confidence * 100:.1f}%"
         
         if confidence < CONFIDENCE_THRESHOLD:
-            trojan_type = "Unknown"
-            severity = "unknown"
-            confidence_pct = f"{confidence * 100:.1f}%"
+            trojan_type = "Other Malware"
+            severity = "medium"
+            trojan_subtype = "Unknown"
         else:
-            trojan_type = idx_to_label[pred_idx]
-            confidence_pct = f"{confidence * 100:.1f}%"
+            detected_type = idx_to_label[pred_idx]
             
-            # Severity based on classification
-            if trojan_type.lower() == "benign":
-                severity = "safe"
-            elif "banker" in trojan_type.lower() or "spy" in trojan_type.lower():
-                severity = "critical"
-            else:
+            # Map to three categories: Trojan, Other Malware, or Benign
+            if "trojan" in detected_type.lower():
+                trojan_type = "Trojan"
                 severity = "high"
+                trojan_subtype = detected_type  # Specific trojan family
+            elif detected_type.lower() == "benign":
+                trojan_type = "Benign"
+                severity = "safe"
+                trojan_subtype = "N/A"
+            else:
+                # All other malware types
+                trojan_type = "Other Malware"
+                severity = "medium"
+                trojan_subtype = detected_type  # Specific malware family
 
         return JSONResponse({
             "trojan_type": trojan_type,
+            "trojan_subtype": trojan_subtype,
             "severity": severity,
             "confidence": confidence_pct
         })
@@ -77,3 +86,7 @@ async def analyze(file: UploadFile = File(...)):
             status_code=500,
             content={"error": str(e)}
         )
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=5000)

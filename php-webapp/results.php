@@ -30,7 +30,7 @@ $stmt->close();
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Analysis Results - Malware Visualization</title>
+    <title>Analysis Results - Trojan Visualization</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -95,6 +95,13 @@ $stmt->close();
                 <span class="result-label">Classification:</span>
                 <span class="result-value"><?php echo htmlspecialchars($data['trojan_type']); ?></span>
             </div>
+
+            <?php if (!empty($data['trojan_subtype']) && $data['trojan_subtype'] != 'Unknown' && $data['trojan_subtype'] != 'N/A'): ?>
+            <div class="result-item">
+                <span class="result-label">Specific Type:</span>
+                <span class="result-value" style="color: #ff6b6b;"><?php echo htmlspecialchars($data['trojan_subtype']); ?></span>
+            </div>
+            <?php endif; ?>
 
             <div class="result-item">
                 <span class="result-label">Threat Level:</span>

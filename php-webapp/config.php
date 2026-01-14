@@ -2,10 +2,11 @@
 // config.php
 // Secure Database connection for Malware Image Recognition
 
-// Disable error display in production
-ini_set('display_errors', 0);
+// Enable error display for debugging
+ini_set('display_errors', 1);
 ini_set('log_errors', 1);
 ini_set('error_log', __DIR__ . '/logs/error.log');
+error_reporting(E_ALL);
 
 // Database credentials - USE ENVIRONMENT VARIABLES IN PRODUCTION
 $servername = getenv('DB_HOST') ?: "localhost";
@@ -35,15 +36,12 @@ try {
 define('UPLOAD_DIR', __DIR__ . '/uploads/');
 define('MAX_FILE_SIZE', 5000000); // 5MB
 
-// Allowed file types with MIME types
+// Allowed file types with MIME types (only for converted output images)
 define('ALLOWED_IMAGE_TYPES', [
-    'jpg' => ['image/jpeg'],
-    'jpeg' => ['image/jpeg'],
-    'png' => ['image/png'],
-    'bmp' => ['image/bmp', 'image/x-ms-bmp'],
-    'gif' => ['image/gif']
+    'png' => ['image/png']
 ]);
 
+// Allowed executable file types for conversion
 define('ALLOWED_BINARY_TYPES', [
     'exe' => ['application/x-dosexec', 'application/x-msdownload', 'application/octet-stream'],
     'dll' => ['application/x-dosexec', 'application/x-msdownload', 'application/octet-stream'],

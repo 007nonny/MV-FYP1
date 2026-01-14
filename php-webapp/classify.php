@@ -75,7 +75,7 @@ if (!empty($preloadedImage)) {
 }
 
 // Send to ML service with timeout
-$ml_url = 'http://127.0.0.1:8000/analyze';
+$ml_url = 'http://127.0.0.1:5000/analyze';
 
 try {
     $cfile = new CURLFile($fileToAnalyze);
@@ -108,18 +108,19 @@ try {
     }
     
     $trojan_type = $result['trojan_type'] ?? 'Unknown';
+    $trojan_subtype = $result['trojan_subtype'] ?? 'Unknown';
     $severity = $result['severity'] ?? 'unknown';
     $confidence = $result['confidence'] ?? 'N/A';
 
     // Store in database using prepared statement
-    $stmt = $conn->prepare("INSERT INTO uploads (filename, trojan_type, severity) VALUES (?, ?, ?)");
+    $stmt = $conn->prepare("INSERT INTO uploads (filename, trojan_type, trojan_subtype, severity) VALUES (?, ?, ?, ?)");
     if (!$stmt) {
         logSecurityEvent('database_prepare_failed', ['error' => $conn->error]);
         header("Location: analyze.php?error=database");
         exit;
     }
     
-    $stmt->bind_param("sss", $fileName, $trojan_type, $severity);
+    $stmt->bind_param("ssss", $fileName, $trojan_type, $trojan_subtype, $severity);
     $stmt->execute();
     $uploadId = $stmt->insert_id;
     $stmt->close();
