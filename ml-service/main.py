@@ -6,24 +6,49 @@ from torchvision import models
 from PIL import Image
 import json
 import io
-import os
 
 app = FastAPI()
+
+# ---- Severity policy for FYP ----
+# High   = stronger persistence / wider damage / botnet or downloader behavior
+# Medium = trojan families with moderate risk
+# Low    = obfuscators or less directly harmful support families
+ALLOWED_SEVERITIES = {"high", "medium", "low"}
+ALLOWED_CATEGORIES = {"Trojan", "Other Malware"}
 
 # ---- Family mapping table (loaded from JSON) ----
 with open("/home/kali/Desktop/FYP1/MalwareImageRecognitionFYP1/models/family_mapping.json", "r") as f:
     _raw_map = json.load(f)
-# Normalise severity to lowercase for internal use
-FAMILY_MAP = {
-    family: (info["category"], info["severity"].lower())
-    for family, info in _raw_map.items()
-}
+
+FAMILY_MAP = {}
+for family, info in _raw_map.items():
+    category = info.get("category")
+    severity = str(info.get("severity", "")).lower()
+
+    if category not in ALLOWED_CATEGORIES:
+        raise RuntimeError(
+            f"Invalid category '{category}' for family '{family}'. "
+            f"Allowed: {sorted(ALLOWED_CATEGORIES)}"
+        )
+    if severity not in ALLOWED_SEVERITIES:
+        raise RuntimeError(
+            f"Invalid severity '{severity}' for family '{family}'. "
+            f"Allowed: {sorted(ALLOWED_SEVERITIES)}"
+        )
+
+    FAMILY_MAP[family] = (category, severity)
 
 # ---- Load labels ----
 with open("/home/kali/Desktop/FYP1/MalwareImageRecognitionFYP1/models/labels.json", "r") as f:
     labels = json.load(f)
 idx_to_label = {v: k for k, v in labels.items()}
 num_classes = len(labels)
+
+missing_families = sorted(set(labels.keys()) - set(FAMILY_MAP.keys()))
+if missing_families:
+    raise RuntimeError(
+        "family_mapping.json is missing mapped families: " + ", ".join(missing_families)
+    )
 
 # ---- Load model ----
 device = torch.device("cpu")
