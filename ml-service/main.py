@@ -10,6 +10,15 @@ import os
 
 app = FastAPI()
 
+# ---- Family mapping table (loaded from JSON) ----
+with open("/home/kali/Desktop/FYP1/MalwareImageRecognitionFYP1/models/family_mapping.json", "r") as f:
+    _raw_map = json.load(f)
+# Normalise severity to lowercase for internal use
+FAMILY_MAP = {
+    family: (info["category"], info["severity"].lower())
+    for family, info in _raw_map.items()
+}
+
 # ---- Load labels ----
 with open("/home/kali/Desktop/FYP1/MalwareImageRecognitionFYP1/models/labels.json", "r") as f:
     labels = json.load(f)
@@ -52,27 +61,21 @@ async def analyze(file: UploadFile = File(...)):
         
         confidence_pct = f"{confidence * 100:.1f}%"
         
+        detected_type = idx_to_label[pred_idx]
+
         if confidence < CONFIDENCE_THRESHOLD:
-            trojan_type = "Other Malware"
-            severity = "medium"
-            trojan_subtype = "Unknown"
+            # Low confidence — still show the predicted family, but mark as Uncertain
+            trojan_type = "Uncertain"
+            severity = "unknown"
+            trojan_subtype = detected_type
         else:
-            detected_type = idx_to_label[pred_idx]
-            
-            # Map to three categories: Trojan, Other Malware, or Benign
-            if "trojan" in detected_type.lower():
-                trojan_type = "Trojan"
-                severity = "high"
-                trojan_subtype = detected_type  # Specific trojan family
-            elif detected_type.lower() == "benign":
-                trojan_type = "Benign"
-                severity = "safe"
-                trojan_subtype = "N/A"
+            # Look up family in mapping table (family_mapping.json)
+            if detected_type in FAMILY_MAP:
+                trojan_type, severity = FAMILY_MAP[detected_type]
             else:
-                # All other malware types
                 trojan_type = "Other Malware"
                 severity = "medium"
-                trojan_subtype = detected_type  # Specific malware family
+            trojan_subtype = detected_type  # Always show specific family name
 
         return JSONResponse({
             "trojan_type": trojan_type,

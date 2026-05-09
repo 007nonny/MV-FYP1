@@ -1,2 +1,8 @@
 fastapi
 uvicorn
+torch
+torchvision
+pillow
+tqdm
+scikit-learn
+numpy

@@ -315,6 +315,14 @@ body {
     color: #4caf50;
 }
 
+.severity-medium {
+    color: #ffb74d;
+}
+
+.severity-low {
+    color: #81c784;
+}
+
 .severity-high {
     color: #ff9800;
 }

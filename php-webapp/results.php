@@ -24,6 +24,34 @@ if ($result->num_rows == 0) {
 
 $data = $result->fetch_assoc();
 $stmt->close();
+
+$trojanType = trim((string)($data['trojan_type'] ?? 'Unknown'));
+$trojanSubtype = trim((string)($data['trojan_subtype'] ?? 'Unknown'));
+$severity = strtolower(trim((string)($data['severity'] ?? 'unknown')));
+
+// Prefer DB confidence if available, fallback to query param for backward compatibility
+$confidence = 'N/A';
+if (isset($data['confidence']) && $data['confidence'] !== '') {
+    $confidence = (string)$data['confidence'];
+} elseif (isset($_GET['confidence']) && preg_match('/^[0-9]+(\.[0-9]+)?%$/', $_GET['confidence'])) {
+    $confidence = $_GET['confidence'];
+}
+
+$isMalicious = ($trojanType !== 'Uncertain');
+
+$statusLabel = ($trojanType === 'Uncertain')
+    ? 'Low Confidence — Uncertain Classification'
+    : (in_array($severity, ['high', 'critical'], true) ? 'Trojan Detected' : 'Malware Detected');
+
+$severityClass = 'severity-' . preg_replace('/[^a-z0-9-]/', '', $severity);
+$severityIcon = [
+    'safe'     => '✓',
+    'medium'   => '⚠',
+    'high'     => '⚠',
+    'critical' => '☠',
+    'unknown'  => '?'
+];
+$icon = $severityIcon[$severity] ?? ($isMalicious ? '⚠' : '?');
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -58,26 +86,23 @@ $stmt->close();
         <div class="results-section">
             <h3>Classification Results</h3>
             
-            <?php
-            $severityClass = 'severity-' . strtolower($data['severity']);
-            $severityIcon = [
-                'safe' => '✓',
-                'high' => '⚠',
-                'critical' => '☠',
-                'unknown' => '?'
-            ];
-            $icon = $severityIcon[$data['severity']] ?? '?';
-            ?>
-            
             <div style="text-align: center; padding: 2rem; background: rgba(0,0,0,0.3); border-radius: 8px; margin-bottom: 2rem;">
                 <div style="font-size: 4rem; margin-bottom: 1rem;">
                     <?php echo $icon; ?>
                 </div>
-                <h2 style="font-size: 2.5rem; margin-bottom: 0.5rem; color: #fff;">
-                    <?php echo htmlspecialchars($data['trojan_type']); ?>
+                <h2 style="font-size: 2.5rem; margin-bottom: 0.3rem; color: #fff;">
+                    <?php echo htmlspecialchars($trojanType); ?>
                 </h2>
-                <p class="<?php echo $severityClass; ?>" style="font-size: 1.5rem; font-weight: bold;">
-                    Severity: <?php echo strtoupper($data['severity']); ?>
+                <?php if (!empty($trojanSubtype) && $trojanSubtype !== 'Unknown'): ?>
+                <p style="font-size: 1.2rem; color: #ff6b6b; margin-bottom: 0.4rem; font-weight: bold;">
+                    <?php echo htmlspecialchars($trojanSubtype); ?>
+                </p>
+                <?php endif; ?>
+                <p class="<?php echo $severityClass; ?>" style="font-size: 1.3rem; font-weight: bold; margin-bottom: 0.3rem;">
+                    Severity: <?php echo ucfirst($severity); ?>
+                </p>
+                <p style="font-size: 1.1rem; color: #4fc3f7; font-weight: bold;">
+                    Confidence: <?php echo htmlspecialchars($confidence); ?>
                 </p>
             </div>
 
@@ -92,22 +117,27 @@ $stmt->close();
             </div>
 
             <div class="result-item">
-                <span class="result-label">Classification:</span>
-                <span class="result-value"><?php echo htmlspecialchars($data['trojan_type']); ?></span>
+                <span class="result-label">Malware Category:</span>
+                <span class="result-value"><?php echo htmlspecialchars($trojanType); ?></span>
             </div>
 
-            <?php if (!empty($data['trojan_subtype']) && $data['trojan_subtype'] != 'Unknown' && $data['trojan_subtype'] != 'N/A'): ?>
             <div class="result-item">
-                <span class="result-label">Specific Type:</span>
-                <span class="result-value" style="color: #ff6b6b;"><?php echo htmlspecialchars($data['trojan_subtype']); ?></span>
-            </div>
-            <?php endif; ?>
-
-            <div class="result-item">
-                <span class="result-label">Threat Level:</span>
-                <span class="result-value <?php echo $severityClass; ?>">
-                    <?php echo strtoupper($data['severity']); ?>
+                <span class="result-label">Predicted Family:</span>
+                <span class="result-value" style="color: #ff6b6b; font-size: 1.1rem;">
+                    <?php echo (!empty($trojanSubtype) && $trojanSubtype !== 'Unknown') ? htmlspecialchars($trojanSubtype) : '—'; ?>
                 </span>
+            </div>
+
+            <div class="result-item">
+                <span class="result-label">Severity Level:</span>
+                <span class="result-value <?php echo $severityClass; ?>">
+                    <?php echo ($severity === 'unknown') ? 'Unknown' : ucfirst($severity); ?>
+                </span>
+            </div>
+
+            <div class="result-item">
+                <span class="result-label">Model Confidence:</span>
+                <span class="result-value" style="color: #4fc3f7; font-size: 1.1rem;"><?php echo htmlspecialchars($confidence); ?></span>
             </div>
 
             <div class="result-item">
@@ -131,27 +161,27 @@ $stmt->close();
 
         <!-- Threat Information -->
         <div class="info-cards" style="margin-top: 3rem;">
-            <?php if ($data['severity'] == 'safe'): ?>
+            <?php if (!$isMalicious): ?>
                 <div class="info-card">
-                    <div class="info-card-icon" style="color: #4caf50;">✓</div>
-                    <h3>Safe File</h3>
-                    <p>This file appears to be benign with no detected malicious patterns.</p>
+                    <div class="info-card-icon">❓</div>
+                    <h3>Uncertain Classification</h3>
+                    <p>Confidence was too low to confirm. Closest match: <strong><?php echo htmlspecialchars($trojanSubtype); ?></strong>. Treat with caution.</p>
                 </div>
                 <div class="info-card">
-                    <div class="info-card-icon">🛡️</div>
-                    <h3>Recommendation</h3>
-                    <p>While classified as safe, always exercise caution with unknown files.</p>
+                    <div class="info-card-icon">🔍</div>
+                    <h3>Further Analysis Recommended</h3>
+                    <p>Submit to additional malware platforms or re-scan with a cleaner image for a better result.</p>
                 </div>
                 <div class="info-card">
                     <div class="info-card-icon">📊</div>
-                    <h3>Confidence</h3>
-                    <p>Classification made with high confidence based on visual patterns.</p>
+                    <h3>Model Confidence</h3>
+                    <p>Prediction confidence: <?php echo htmlspecialchars($confidence); ?>. Threshold is 50%.</p>
                 </div>
-            <?php elseif (in_array($data['severity'], ['high', 'critical'])): ?>
+            <?php elseif (in_array($severity, ['high', 'critical'], true)): ?>
                 <div class="info-card">
                     <div class="info-card-icon" style="color: #ff3333;">⚠</div>
-                    <h3>Threat Detected</h3>
-                    <p>This file exhibits malicious patterns consistent with <?php echo htmlspecialchars($data['trojan_type']); ?>.</p>
+                    <h3>Trojan Detected</h3>
+                    <p>This file exhibits malicious patterns consistent with <?php echo htmlspecialchars($trojanType); ?>.</p>
                 </div>
                 <div class="info-card">
                     <div class="info-card-icon">🚨</div>
@@ -159,25 +189,25 @@ $stmt->close();
                     <p>Quarantine or delete this file immediately. Do not execute.</p>
                 </div>
                 <div class="info-card">
-                    <div class="info-card-icon">🔒</div>
-                    <h3>Security Alert</h3>
-                    <p>Report to security team and scan system for additional infections.</p>
+                    <div class="info-card-icon">📊</div>
+                    <h3>Confidence</h3>
+                    <p>Model confidence for this prediction: <?php echo htmlspecialchars($confidence); ?>.</p>
                 </div>
             <?php else: ?>
                 <div class="info-card">
-                    <div class="info-card-icon">❓</div>
-                    <h3>Unknown Classification</h3>
-                    <p>Unable to classify with sufficient confidence. May be new malware variant.</p>
+                    <div class="info-card-icon" style="color: #ffb74d;">⚠</div>
+                    <h3>Malware Detected</h3>
+                    <p>This file exhibits malicious patterns consistent with <?php echo htmlspecialchars($trojanSubtype ?: $trojanType); ?>.</p>
                 </div>
                 <div class="info-card">
                     <div class="info-card-icon">🔍</div>
                     <h3>Further Analysis</h3>
-                    <p>Consider submitting to additional malware analysis platforms.</p>
+                    <p>Consider submitting to additional malware analysis platforms for confirmation.</p>
                 </div>
                 <div class="info-card">
-                    <div class="info-card-icon">⚠</div>
-                    <h3>Caution Advised</h3>
-                    <p>Treat as potentially malicious until verified by other methods.</p>
+                    <div class="info-card-icon">📊</div>
+                    <h3>Confidence</h3>
+                    <p>Model confidence for this prediction: <?php echo htmlspecialchars($confidence); ?>.</p>
                 </div>
             <?php endif; ?>
         </div>

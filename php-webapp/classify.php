@@ -113,20 +113,37 @@ try {
     $confidence = $result['confidence'] ?? 'N/A';
 
     // Store in database using prepared statement
-    $stmt = $conn->prepare("INSERT INTO uploads (filename, trojan_type, trojan_subtype, severity) VALUES (?, ?, ?, ?)");
-    if (!$stmt) {
-        logSecurityEvent('database_prepare_failed', ['error' => $conn->error]);
-        header("Location: analyze.php?error=database");
-        exit;
+    // Support both schema versions (with/without confidence column)
+    $hasConfidenceColumn = false;
+    $columnCheck = $conn->query("SHOW COLUMNS FROM uploads LIKE 'confidence'");
+    if ($columnCheck && $columnCheck->num_rows > 0) {
+        $hasConfidenceColumn = true;
     }
-    
-    $stmt->bind_param("ssss", $fileName, $trojan_type, $trojan_subtype, $severity);
+
+    if ($hasConfidenceColumn) {
+        $stmt = $conn->prepare("INSERT INTO uploads (filename, trojan_type, trojan_subtype, severity, confidence) VALUES (?, ?, ?, ?, ?)");
+        if (!$stmt) {
+            logSecurityEvent('database_prepare_failed', ['error' => $conn->error]);
+            header("Location: analyze.php?error=database");
+            exit;
+        }
+        $stmt->bind_param("sssss", $fileName, $trojan_type, $trojan_subtype, $severity, $confidence);
+    } else {
+        $stmt = $conn->prepare("INSERT INTO uploads (filename, trojan_type, trojan_subtype, severity) VALUES (?, ?, ?, ?)");
+        if (!$stmt) {
+            logSecurityEvent('database_prepare_failed', ['error' => $conn->error]);
+            header("Location: analyze.php?error=database");
+            exit;
+        }
+        $stmt->bind_param("ssss", $fileName, $trojan_type, $trojan_subtype, $severity);
+    }
+
     $stmt->execute();
     $uploadId = $stmt->insert_id;
     $stmt->close();
 
     // Redirect to results page
-    header("Location: results.php?id=" . intval($uploadId));
+    header("Location: results.php?id=" . intval($uploadId) . "&confidence=" . urlencode($confidence));
     exit;
     
 } catch (Exception $e) {
