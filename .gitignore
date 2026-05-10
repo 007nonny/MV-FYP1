@@ -23,3 +23,8 @@ php-webapp/uploads/
 # OS
 .DS_Store
 Thumbs.db
+
+# Dataset splits (large - generated locally)
+Dataset-1/train/
+Dataset-1/val/
+Dataset-1/test/

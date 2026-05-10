@@ -9,7 +9,7 @@ import io
 
 app = FastAPI()
 
-# ---- Severity policy for FYP ----
+# ---- Severity policy ----
 # High   = stronger persistence / wider damage / botnet or downloader behavior
 # Medium = trojan families with moderate risk
 # Low    = obfuscators or less directly harmful support families
