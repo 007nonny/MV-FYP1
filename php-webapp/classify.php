@@ -112,6 +112,23 @@ try {
     $severity = $result['severity'] ?? 'unknown';
     $confidence = $result['confidence'] ?? 'N/A';
 
+    // If the database is unavailable, keep the result in session and
+    // continue to the results page instead of failing with a fatal error.
+    if (!isset($conn) || !($conn instanceof mysqli)) {
+        $_SESSION['last_analysis'] = [
+            'id' => 0,
+            'filename' => $fileToAnalyze,
+            'trojan_type' => $trojan_type,
+            'trojan_subtype' => $trojan_subtype,
+            'severity' => $severity,
+            'confidence' => $confidence,
+            'uploaded_at' => date('Y-m-d H:i:s'),
+        ];
+
+        header("Location: results.php?source=session&confidence=" . urlencode($confidence));
+        exit;
+    }
+
     // Store in database using prepared statement
     // Support both schema versions (with/without confidence column)
     $hasConfidenceColumn = false;

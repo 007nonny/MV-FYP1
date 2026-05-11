@@ -24,6 +24,42 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 $csrfToken = generateCSRFToken();
+
+$errorMessage = '';
+if (isset($_GET['error'])) {
+    switch ($_GET['error']) {
+        case 'ratelimit':
+            $errorMessage = 'Too many requests. Please wait a moment and try again.';
+            break;
+        case 'csrf':
+            $errorMessage = 'Security token check failed. Please reload the page and try again.';
+            break;
+        case 'validation':
+            $errorMessage = 'The uploaded file did not pass validation.';
+            break;
+        case 'upload':
+            $errorMessage = 'File upload failed.';
+            break;
+        case 'nofile':
+            $errorMessage = 'Please choose an image before analyzing.';
+            break;
+        case 'mlservice':
+            $errorMessage = 'ML service is not reachable right now. Start the service and try again.';
+            break;
+        case 'database':
+            $errorMessage = 'Database is unavailable. Results history cannot be saved right now.';
+            break;
+        case 'exception':
+            $errorMessage = 'An unexpected error occurred during classification.';
+            break;
+        case 'notfound':
+            $errorMessage = 'The requested result was not found.';
+            break;
+        case 'invalid':
+            $errorMessage = 'The selected image path was invalid.';
+            break;
+    }
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -54,6 +90,12 @@ $csrfToken = generateCSRFToken();
             <h2>Threat Analysis</h2>
             <p>Upload a trojan visualization image for ML-based classification</p>
         </div>
+
+        <?php if (!empty($errorMessage)): ?>
+            <div style="background: rgba(255, 87, 87, 0.12); border: 1px solid #ff5757; color: #ffb3b3; padding: 1rem 1.25rem; border-radius: 8px; margin-bottom: 1.5rem;">
+                <?php echo h($errorMessage); ?>
+            </div>
+        <?php endif; ?>
 
         <!-- Upload Section -->
         <div class="upload-section">
@@ -99,33 +141,37 @@ $csrfToken = generateCSRFToken();
             <h3>📜 Analysis History</h3>
             <div class="history-table">
                 <?php
-                $result = $conn->query("SELECT * FROM uploads ORDER BY uploaded_at DESC LIMIT 20");
-                
-                if ($result && $result->num_rows > 0) {
-                    echo "<table>";
-                    echo "<thead><tr>";
-                    echo "<th>ID</th>";
-                    echo "<th>Filename</th>";
-                    echo "<th>Trojan Type</th>";
-                    echo "<th>Severity</th>";
-                    echo "<th>Date & Time</th>";
-                    echo "</tr></thead>";
-                    echo "<tbody>";
-                    
-                    while ($row = $result->fetch_assoc()) {
-                        $severityClass = 'severity-' . strtolower(preg_replace('/[^a-z0-9-]/', '', strtolower($row['severity'])));
-                        echo "<tr>";
-                        echo "<td>" . intval($row['id']) . "</td>";
-                        echo "<td>" . h(basename($row['filename'])) . "</td>";
-                        echo "<td><strong>" . h($row['trojan_type']) . "</strong></td>";
-                        echo "<td class='" . h($severityClass) . "'><strong>" . h(strtoupper($row['severity'])) . "</strong></td>";
-                        echo "<td>" . h(date('Y-m-d H:i:s', strtotime($row['uploaded_at']))) . "</td>";
-                        echo "</tr>";
+                if (isset($conn) && $conn instanceof mysqli) {
+                    $result = $conn->query("SELECT * FROM uploads ORDER BY uploaded_at DESC LIMIT 20");
+
+                    if ($result && $result->num_rows > 0) {
+                        echo "<table>";
+                        echo "<thead><tr>";
+                        echo "<th>ID</th>";
+                        echo "<th>Filename</th>";
+                        echo "<th>Trojan Type</th>";
+                        echo "<th>Severity</th>";
+                        echo "<th>Date & Time</th>";
+                        echo "</tr></thead>";
+                        echo "<tbody>";
+                        
+                        while ($row = $result->fetch_assoc()) {
+                            $severityClass = 'severity-' . strtolower(preg_replace('/[^a-z0-9-]/', '', strtolower($row['severity'])));
+                            echo "<tr>";
+                            echo "<td>" . intval($row['id']) . "</td>";
+                            echo "<td>" . h(basename($row['filename'])) . "</td>";
+                            echo "<td><strong>" . h($row['trojan_type']) . "</strong></td>";
+                            echo "<td class='" . h($severityClass) . "'><strong>" . h(strtoupper($row['severity'])) . "</strong></td>";
+                            echo "<td>" . h(date('Y-m-d H:i:s', strtotime($row['uploaded_at']))) . "</td>";
+                            echo "</tr>";
+                        }
+                        
+                        echo "</tbody></table>";
+                    } else {
+                        echo "<p style='text-align: center; color: #666; padding: 2rem;'>No analysis history yet. Start by analyzing your first file!</p>";
                     }
-                    
-                    echo "</tbody></table>";
                 } else {
-                    echo "<p style='text-align: center; color: #666; padding: 2rem;'>No analysis history yet. Start by analyzing your first file!</p>";
+                    echo "<p style='text-align: center; color: #ffb74d; padding: 2rem;'>Database is currently unavailable, so analysis history cannot be shown right now.</p>";
                 }
                 ?>
             </div>

@@ -5,8 +5,16 @@
 function startSecureSession() {
     // Prevent session fixation
     if (session_status() == PHP_SESSION_NONE) {
+        $sessionDir = __DIR__ . '/sessions';
+        if (!is_dir($sessionDir)) {
+            mkdir($sessionDir, 0750, true);
+        }
+        if (is_dir($sessionDir) && is_writable($sessionDir)) {
+            session_save_path($sessionDir);
+        }
+
         ini_set('session.cookie_httponly', 1);
-        ini_set('session.cookie_secure', 1); // Use if HTTPS is enabled
+        ini_set('session.cookie_secure', (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 1 : 0);
         ini_set('session.use_strict_mode', 1);
         ini_set('session.cookie_samesite', 'Strict');
         session_start();

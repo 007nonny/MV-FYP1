@@ -66,7 +66,7 @@ if (isset($_FILES["fileToUpload"])) {
         }
         
         // Send file to ML service
-        $ml_url = 'http://127.0.0.1:8000/analyze';
+        $ml_url = 'http://127.0.0.1:5000/analyze';
         $cfile = new CURLFile($fileToAnalyze);
         $postfields = array('file' => $cfile);
         $ch = curl_init();
@@ -85,11 +85,18 @@ if (isset($_FILES["fileToUpload"])) {
         echo "Trojan Type: " . htmlspecialchars($trojan_type) . "<br>";
         echo "Severity: " . htmlspecialchars($severity) . "<br>";
         echo "Confidence: " . htmlspecialchars($confidence) . "<br>";
-        // Store in DB
-        $stmt = $conn->prepare("INSERT INTO uploads (filename, trojan_type, severity) VALUES (?, ?, ?)");
-        $stmt->bind_param("sss", $targetFile, $trojan_type, $severity);
-        $stmt->execute();
-        $stmt->close();
+
+        // Store in DB only if the connection is available
+        if (isset($conn) && $conn instanceof mysqli) {
+            $stmt = $conn->prepare("INSERT INTO uploads (filename, trojan_type, severity) VALUES (?, ?, ?)");
+            if ($stmt) {
+                $stmt->bind_param("sss", $targetFile, $trojan_type, $severity);
+                $stmt->execute();
+                $stmt->close();
+            }
+        } else {
+            echo "<p><em>Database unavailable, result not saved to history.</em></p>";
+        }
     } else {
         echo "Sorry, there was an error uploading your file.";
     }

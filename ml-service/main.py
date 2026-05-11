@@ -94,13 +94,13 @@ async def analyze(file: UploadFile = File(...)):
             severity = "unknown"
             trojan_subtype = detected_type
         else:
-            # Look up family in mapping table (family_mapping.json)
+            # Look up family in mapping table (
             if detected_type in FAMILY_MAP:
                 trojan_type, severity = FAMILY_MAP[detected_type]
             else:
                 trojan_type = "Other Malware"
                 severity = "medium"
-            trojan_subtype = detected_type  # Always show specific family name
+            trojan_subtype = detected_type  
 
         return JSONResponse({
             "trojan_type": trojan_type,

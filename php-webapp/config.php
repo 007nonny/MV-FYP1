@@ -15,6 +15,7 @@ $password = getenv('DB_PASS') ?: "Change_This_Password_123!";
 $dbname = getenv('DB_NAME') ?: "malware_db";
 
 // Create connection with error handling
+$conn = null;
 try {
     $conn = new mysqli($servername, $username, $password, $dbname);
     
@@ -29,7 +30,7 @@ try {
 } catch (Exception $e) {
     // Log error securely without exposing details
     error_log("Database connection error: " . $e->getMessage());
-    die("Service temporarily unavailable. Please try again later.");
+    $conn = null;
 }
 
 // Define secure upload directory

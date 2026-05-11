@@ -3,55 +3,99 @@ ini_set('display_errors', 1);
 error_reporting(E_ALL);
 
 require 'config.php';
+require_once 'security.php';
+
+startSecureSession();
+setSecurityHeaders();
 
 $uploadId = $_GET['id'] ?? 0;
 
-if ($uploadId == 0) {
-    header("Location: analyze.php");
-    exit;
+if ((!isset($conn) || !($conn instanceof mysqli)) && isset($_SESSION['last_analysis'])) {
+    $data = $_SESSION['last_analysis'];
+    $data['id'] = $data['id'] ?? 0;
+    $data['uploaded_at'] = $data['uploaded_at'] ?? date('Y-m-d H:i:s');
+
+    $trojanType = trim((string)($data['trojan_type'] ?? 'Unknown'));
+    $trojanSubtype = trim((string)($data['trojan_subtype'] ?? 'Unknown'));
+    $severity = strtolower(trim((string)($data['severity'] ?? 'unknown')));
+
+    $confidence = 'N/A';
+    if (isset($data['confidence']) && $data['confidence'] !== '') {
+        $confidence = (string)$data['confidence'];
+    } elseif (isset($_GET['confidence']) && preg_match('/^[0-9]+(\.[0-9]+)?%$/', $_GET['confidence'])) {
+        $confidence = $_GET['confidence'];
+    }
+
+    $isMalicious = ($trojanType !== 'Uncertain');
+    $statusLabel = ($trojanType === 'Uncertain')
+        ? 'Low Confidence — Uncertain Classification'
+        : (in_array($severity, ['high', 'critical'], true) ? 'Trojan Detected' : 'Malware Detected');
+
+    $severityClass = 'severity-' . preg_replace('/[^a-z0-9-]/', '', $severity);
+    $severityIcon = [
+        'safe'     => '✓',
+        'medium'   => '⚠',
+        'high'     => '⚠',
+        'critical' => '☠',
+        'unknown'  => '?'
+    ];
+    $icon = $severityIcon[$severity] ?? ($isMalicious ? '⚠' : '?');
+    $data = [
+        'id' => 0,
+        'filename' => $data['filename'] ?? '',
+        'trojan_type' => $trojanType,
+        'trojan_subtype' => $trojanSubtype,
+        'severity' => $severity,
+        'uploaded_at' => $data['uploaded_at'],
+    ];
+} else {
+    if ($uploadId == 0) {
+        header("Location: analyze.php");
+        exit;
+    }
+
+    // Fetch result from database
+    $stmt = $conn->prepare("SELECT * FROM uploads WHERE id = ?");
+    $stmt->bind_param("i", $uploadId);
+    $stmt->execute();
+    $result = $stmt->get_result();
+
+    if ($result->num_rows == 0) {
+        header("Location: analyze.php?error=notfound");
+        exit;
+    }
+
+    $data = $result->fetch_assoc();
+    $stmt->close();
+
+    $trojanType = trim((string)($data['trojan_type'] ?? 'Unknown'));
+    $trojanSubtype = trim((string)($data['trojan_subtype'] ?? 'Unknown'));
+    $severity = strtolower(trim((string)($data['severity'] ?? 'unknown')));
+
+    // Prefer DB confidence if available, fallback to query param for backward compatibility
+    $confidence = 'N/A';
+    if (isset($data['confidence']) && $data['confidence'] !== '') {
+        $confidence = (string)$data['confidence'];
+    } elseif (isset($_GET['confidence']) && preg_match('/^[0-9]+(\.[0-9]+)?%$/', $_GET['confidence'])) {
+        $confidence = $_GET['confidence'];
+    }
+
+    $isMalicious = ($trojanType !== 'Uncertain');
+
+    $statusLabel = ($trojanType === 'Uncertain')
+        ? 'Low Confidence — Uncertain Classification'
+        : (in_array($severity, ['high', 'critical'], true) ? 'Trojan Detected' : 'Malware Detected');
+
+    $severityClass = 'severity-' . preg_replace('/[^a-z0-9-]/', '', $severity);
+    $severityIcon = [
+        'safe'     => '✓',
+        'medium'   => '⚠',
+        'high'     => '⚠',
+        'critical' => '☠',
+        'unknown'  => '?'
+    ];
+    $icon = $severityIcon[$severity] ?? ($isMalicious ? '⚠' : '?');
 }
-
-// Fetch result from database
-$stmt = $conn->prepare("SELECT * FROM uploads WHERE id = ?");
-$stmt->bind_param("i", $uploadId);
-$stmt->execute();
-$result = $stmt->get_result();
-
-if ($result->num_rows == 0) {
-    header("Location: analyze.php?error=notfound");
-    exit;
-}
-
-$data = $result->fetch_assoc();
-$stmt->close();
-
-$trojanType = trim((string)($data['trojan_type'] ?? 'Unknown'));
-$trojanSubtype = trim((string)($data['trojan_subtype'] ?? 'Unknown'));
-$severity = strtolower(trim((string)($data['severity'] ?? 'unknown')));
-
-// Prefer DB confidence if available, fallback to query param for backward compatibility
-$confidence = 'N/A';
-if (isset($data['confidence']) && $data['confidence'] !== '') {
-    $confidence = (string)$data['confidence'];
-} elseif (isset($_GET['confidence']) && preg_match('/^[0-9]+(\.[0-9]+)?%$/', $_GET['confidence'])) {
-    $confidence = $_GET['confidence'];
-}
-
-$isMalicious = ($trojanType !== 'Uncertain');
-
-$statusLabel = ($trojanType === 'Uncertain')
-    ? 'Low Confidence — Uncertain Classification'
-    : (in_array($severity, ['high', 'critical'], true) ? 'Trojan Detected' : 'Malware Detected');
-
-$severityClass = 'severity-' . preg_replace('/[^a-z0-9-]/', '', $severity);
-$severityIcon = [
-    'safe'     => '✓',
-    'medium'   => '⚠',
-    'high'     => '⚠',
-    'critical' => '☠',
-    'unknown'  => '?'
-];
-$icon = $severityIcon[$severity] ?? ($isMalicious ? '⚠' : '?');
 ?>
 <!DOCTYPE html>
 <html lang="en">

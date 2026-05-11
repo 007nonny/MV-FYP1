@@ -1,6 +1,7 @@
 <?php
 require_once 'security.php';
-require_once 'config.php';
+
+define('UPLOAD_DIR', __DIR__ . '/uploads/');
 
 startSecureSession();
 setSecurityHeaders();

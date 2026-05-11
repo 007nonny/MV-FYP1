@@ -1,7 +1,21 @@
 <?php
 // Handles file to image conversion with security measures
 require_once 'security.php';
-require_once 'config.php';
+
+// Keep convert.php independent from the database connection.
+// The conversion step does not use the database, so a DB outage should not
+// block file processing.
+define('UPLOAD_DIR', __DIR__ . '/uploads/');
+define('MAX_FILE_SIZE', 5000000); // 5MB
+
+define('ALLOWED_BINARY_TYPES', [
+    'exe' => ['application/x-dosexec', 'application/x-msdownload', 'application/octet-stream'],
+    'dll' => ['application/x-dosexec', 'application/x-msdownload', 'application/octet-stream'],
+    'bin' => ['application/octet-stream'],
+    'dat' => ['application/octet-stream'],
+    'sys' => ['application/octet-stream'],
+    'com' => ['application/x-dosexec', 'application/octet-stream']
+]);
 
 startSecureSession();
 setSecurityHeaders();
@@ -57,7 +71,11 @@ if (move_uploaded_file($_FILES["fileToUpload"]["tmp_name"], $targetFile)) {
     $converterScript = "/home/kali/Desktop/FYP1/MalwareImageRecognitionFYP1/convert_file_to_image.py";
     
     // Use the Python from the virtual environment
-    $pythonPath = "/home/kali/Desktop/FYP1/MalwareImageRecognitionFYP1/ml-service/.venv/bin/python3";
+    $pythonPath = "/home/kali/Desktop/FYP1/MalwareImageRecognitionFYP1/ml-service/.venv/bin/python";
+
+    if (!file_exists($pythonPath)) {
+        $pythonPath = "/home/kali/Desktop/FYP1/MalwareImageRecognitionFYP1/ml-service/.venv/bin/python3";
+    }
     
     // Validate script exists
     if (!file_exists($converterScript) || !file_exists($pythonPath)) {
@@ -68,8 +86,23 @@ if (move_uploaded_file($_FILES["fileToUpload"]["tmp_name"], $targetFile)) {
     }
     
     // Build command with proper escaping - NO user input in command
+    if (!function_exists('shell_exec')) {
+        logSecurityEvent('shell_exec_disabled');
+        echo "<div class='container' style='margin-top: 2rem;'>";
+        echo "<div class='alert alert-error'><h3>❌ Server Configuration Error</h3>";
+        echo "<p>shell_exec() is disabled on this server.</p></div></div>";
+        exit;
+    }
+
+    $existingLdLibraryPath = getenv('LD_LIBRARY_PATH');
+    $ldLibraryPathPrefix = 'LD_LIBRARY_PATH=/usr/lib/x86_64-linux-gnu';
+    if (!empty($existingLdLibraryPath)) {
+        $ldLibraryPathPrefix .= ':' . $existingLdLibraryPath;
+    }
+
     $cmd = sprintf(
-        "LD_LIBRARY_PATH=/usr/lib/x86_64-linux-gnu:$LD_LIBRARY_PATH %s %s %s %s 2>&1",
+        "%s %s %s %s %s 2>&1",
+        $ldLibraryPathPrefix,
         escapeshellarg($pythonPath),
         escapeshellarg($converterScript),
         escapeshellarg($targetFile),
