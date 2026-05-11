@@ -194,7 +194,7 @@ if (isset($_GET['error'])) {
             <div class="info-card">
                 <div class="info-card-icon">🎯</div>
                 <h3>Multi-class Detection</h3>
-                <p>Identifies Benign files and 4 types of trojans with high accuracy.</p>
+                <p>Classifies malware visualizations across 25 malware families with high accuracy.</p>
             </div>
         </div>
     </div>
