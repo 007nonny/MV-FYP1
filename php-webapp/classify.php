@@ -75,9 +75,15 @@ if (!empty($preloadedImage)) {
 }
 
 // Send to ML service with timeout
-$ml_url = 'http://127.0.0.1:5000/analyze';
+$ml_url = ML_ANALYZE_URL;
 
 try {
+    if (!isMlServiceReachable()) {
+        logSecurityEvent('ml_service_unreachable', ['url' => ML_SERVICE_BASE_URL]);
+        header("Location: analyze.php?error=mlservice");
+        exit;
+    }
+
     $cfile = new CURLFile($fileToAnalyze);
     $postfields = array('file' => $cfile);
 
@@ -112,18 +118,20 @@ try {
     $severity = $result['severity'] ?? 'unknown';
     $confidence = $result['confidence'] ?? 'N/A';
 
+    $sessionResult = [
+        'id' => 0,
+        'filename' => $fileToAnalyze,
+        'trojan_type' => $trojan_type,
+        'trojan_subtype' => $trojan_subtype,
+        'severity' => $severity,
+        'confidence' => $confidence,
+        'uploaded_at' => date('Y-m-d H:i:s'),
+    ];
+
     // If the database is unavailable, keep the result in session and
     // continue to the results page instead of failing with a fatal error.
     if (!isset($conn) || !($conn instanceof mysqli)) {
-        $_SESSION['last_analysis'] = [
-            'id' => 0,
-            'filename' => $fileToAnalyze,
-            'trojan_type' => $trojan_type,
-            'trojan_subtype' => $trojan_subtype,
-            'severity' => $severity,
-            'confidence' => $confidence,
-            'uploaded_at' => date('Y-m-d H:i:s'),
-        ];
+        $_SESSION['last_analysis'] = $sessionResult;
 
         header("Location: results.php?source=session&confidence=" . urlencode($confidence));
         exit;
@@ -141,7 +149,8 @@ try {
         $stmt = $conn->prepare("INSERT INTO uploads (filename, trojan_type, trojan_subtype, severity, confidence) VALUES (?, ?, ?, ?, ?)");
         if (!$stmt) {
             logSecurityEvent('database_prepare_failed', ['error' => $conn->error]);
-            header("Location: analyze.php?error=database");
+            $_SESSION['last_analysis'] = $sessionResult;
+            header("Location: results.php?source=session&confidence=" . urlencode($confidence));
             exit;
         }
         $stmt->bind_param("sssss", $fileName, $trojan_type, $trojan_subtype, $severity, $confidence);
@@ -149,13 +158,21 @@ try {
         $stmt = $conn->prepare("INSERT INTO uploads (filename, trojan_type, trojan_subtype, severity) VALUES (?, ?, ?, ?)");
         if (!$stmt) {
             logSecurityEvent('database_prepare_failed', ['error' => $conn->error]);
-            header("Location: analyze.php?error=database");
+            $_SESSION['last_analysis'] = $sessionResult;
+            header("Location: results.php?source=session&confidence=" . urlencode($confidence));
             exit;
         }
         $stmt->bind_param("ssss", $fileName, $trojan_type, $trojan_subtype, $severity);
     }
 
-    $stmt->execute();
+    if (!$stmt->execute()) {
+        logSecurityEvent('database_execute_failed', ['error' => $stmt->error]);
+        $stmt->close();
+        $_SESSION['last_analysis'] = $sessionResult;
+        header("Location: results.php?source=session&confidence=" . urlencode($confidence));
+        exit;
+    }
+
     $uploadId = $stmt->insert_id;
     $stmt->close();
 

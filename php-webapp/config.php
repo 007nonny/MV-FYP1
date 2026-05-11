@@ -39,16 +39,20 @@ define('MAX_FILE_SIZE', 5000000); // 5MB
 
 // Allowed file types with MIME types (only for converted output images)
 define('ALLOWED_IMAGE_TYPES', [
-    'png' => ['image/png']
+    'jpg' => ['image/jpeg', 'image/pjpeg'],
+    'jpeg' => ['image/jpeg', 'image/pjpeg'],
+    'png' => ['image/png'],
+    'bmp' => ['image/bmp', 'image/x-ms-bmp'],
+    'gif' => ['image/gif']
 ]);
 
 // Allowed executable file types for conversion
 define('ALLOWED_BINARY_TYPES', [
-    'exe' => ['application/x-dosexec', 'application/x-msdownload', 'application/octet-stream'],
-    'dll' => ['application/x-dosexec', 'application/x-msdownload', 'application/octet-stream'],
+    'exe' => ['application/x-dosexec', 'application/x-msdownload', 'application/octet-stream', 'application/vnd.microsoft.portable-executable'],
+    'dll' => ['application/x-dosexec', 'application/x-msdownload', 'application/octet-stream', 'application/vnd.microsoft.portable-executable'],
     'bin' => ['application/octet-stream'],
     'dat' => ['application/octet-stream'],
     'sys' => ['application/octet-stream'],
-    'com' => ['application/x-dosexec', 'application/octet-stream']
+    'com' => ['application/x-dosexec', 'application/octet-stream', 'application/vnd.microsoft.portable-executable']
 ]);
 ?>

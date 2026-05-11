@@ -1,9 +1,9 @@
 <?php
 require_once 'security.php';
-
-define('UPLOAD_DIR', __DIR__ . '/uploads/');
+require_once 'config.php';
 
 startSecureSession();
+enforceCanonicalBaseUrl();
 setSecurityHeaders();
 
 // Sanitize and validate image path to prevent path traversal

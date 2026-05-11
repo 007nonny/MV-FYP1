@@ -1,6 +1,7 @@
 <?php
 require_once 'security.php';
 startSecureSession();
+enforceCanonicalBaseUrl();
 setSecurityHeaders();
 $csrfToken = generateCSRFToken();
 ?>
@@ -46,7 +47,7 @@ $csrfToken = generateCSRFToken();
                 <form action="convert.php" method="post" enctype="multipart/form-data" id="uploadForm">
                     <input type="hidden" name="csrf_token" value="<?php echo h($csrfToken); ?>">
                     <div class="file-input-wrapper">
-                        <input type="file" name="fileToUpload" id="fileInput" required>
+                        <input type="file" name="fileToUpload" id="fileInput" accept=".exe,.dll,.bin,.dat,.sys,.com" required>
                         <label for="fileInput" class="file-input-label">Drag & Drop or Browse</label>
                     </div>
                     <p class="supported-formats">

@@ -3,16 +3,17 @@ require_once 'security.php';
 require_once 'config.php';
 
 startSecureSession();
+enforceCanonicalBaseUrl();
 setSecurityHeaders();
 
 // Check if coming from conversion result
 $preloadedImage = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    // Validate CSRF token - TEMPORARILY DISABLED FOR TESTING
-    // if (!isset($_POST['csrf_token']) || !validateCSRFToken($_POST['csrf_token'])) {
-    //     logSecurityEvent('csrf_token_invalid', ['action' => 'analyze_preload']);
-    //     die("<script>alert('Invalid security token'); window.location.href='index.php';</script>");
-    // }
+    if (!isset($_POST['csrf_token']) || !validateCSRFToken($_POST['csrf_token'])) {
+        logSecurityEvent('csrf_token_invalid', ['action' => 'analyze_preload']);
+        header('Location: analyze.php?error=csrf');
+        exit;
+    }
     
     // Sanitize preloaded image path
     if (isset($_POST['image_path'])) {
@@ -24,6 +25,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 $csrfToken = generateCSRFToken();
+$preloadedImageUrl = !empty($preloadedImage) ? 'uploads/' . rawurlencode(basename($preloadedImage)) : '';
 
 $errorMessage = '';
 if (isset($_GET['error'])) {
@@ -129,7 +131,7 @@ if (isset($_GET['error'])) {
             <div class="preview-box" id="previewBox">
                 <h3>Image Preview</h3>
                 <?php if (!empty($preloadedImage)): ?>
-                    <img src="<?php echo h(basename($preloadedImage)); ?>" alt="Preview" class="preview-image" id="previewImage">
+                    <img src="<?php echo h($preloadedImageUrl); ?>" alt="Preview" class="preview-image" id="previewImage">
                 <?php else: ?>
                     <p style="color: #666; margin-top: 1rem;">Upload an image to preview</p>
                 <?php endif; ?>

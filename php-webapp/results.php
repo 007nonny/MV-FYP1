@@ -6,11 +6,13 @@ require 'config.php';
 require_once 'security.php';
 
 startSecureSession();
+enforceCanonicalBaseUrl();
 setSecurityHeaders();
 
 $uploadId = $_GET['id'] ?? 0;
+$useSessionFallback = (($_GET['source'] ?? '') === 'session');
 
-if ((!isset($conn) || !($conn instanceof mysqli)) && isset($_SESSION['last_analysis'])) {
+if (($useSessionFallback || !isset($conn) || !($conn instanceof mysqli)) && isset($_SESSION['last_analysis'])) {
     $data = $_SESSION['last_analysis'];
     $data['id'] = $data['id'] ?? 0;
     $data['uploaded_at'] = $data['uploaded_at'] ?? date('Y-m-d H:i:s');
@@ -56,6 +58,15 @@ if ((!isset($conn) || !($conn instanceof mysqli)) && isset($_SESSION['last_analy
 
     // Fetch result from database
     $stmt = $conn->prepare("SELECT * FROM uploads WHERE id = ?");
+    if (!$stmt) {
+        if (isset($_SESSION['last_analysis'])) {
+            header("Location: results.php?source=session&confidence=" . urlencode($_GET['confidence'] ?? 'N/A'));
+            exit;
+        }
+        header("Location: analyze.php?error=database");
+        exit;
+    }
+
     $stmt->bind_param("i", $uploadId);
     $stmt->execute();
     $result = $stmt->get_result();
@@ -96,6 +107,14 @@ if ((!isset($conn) || !($conn instanceof mysqli)) && isset($_SESSION['last_analy
     ];
     $icon = $severityIcon[$severity] ?? ($isMalicious ? '⚠' : '?');
 }
+
+$displayImageUrl = '';
+if (!empty($data['filename'])) {
+    $candidateBasename = basename($data['filename']);
+    if (file_exists(UPLOAD_DIR . $candidateBasename)) {
+        $displayImageUrl = 'uploads/' . rawurlencode($candidateBasename);
+    }
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -126,6 +145,12 @@ if ((!isset($conn) || !($conn instanceof mysqli)) && isset($_SESSION['last_analy
             <h2>🎯 Analysis Complete</h2>
             <p>Machine Learning classification results</p>
         </div>
+
+        <?php if ($useSessionFallback): ?>
+            <div style="background: rgba(255, 183, 77, 0.12); border: 1px solid #ffb74d; color: #ffe0b2; padding: 1rem 1.25rem; border-radius: 8px; margin-bottom: 1.5rem;">
+                Results are being shown from the active session because database storage is not available.
+            </div>
+        <?php endif; ?>
 
         <div class="results-section">
             <h3>Classification Results</h3>
@@ -189,10 +214,10 @@ if ((!isset($conn) || !($conn instanceof mysqli)) && isset($_SESSION['last_analy
                 <span class="result-value"><?php echo date('F j, Y, g:i A', strtotime($data['uploaded_at'])); ?></span>
             </div>
 
-            <?php if (file_exists($data['filename'])): ?>
+            <?php if (!empty($displayImageUrl)): ?>
             <div style="margin-top: 2rem; text-align: center;">
                 <h4 style="color: #fff; margin-bottom: 1rem;">Analyzed Image</h4>
-                <img src="<?php echo htmlspecialchars($data['filename']); ?>" alt="Analyzed Image" style="max-width: 100%; max-height: 400px; border-radius: 8px; border: 2px solid #444;">
+                <img src="<?php echo htmlspecialchars($displayImageUrl); ?>" alt="Analyzed Image" style="max-width: 100%; max-height: 400px; border-radius: 8px; border: 2px solid #444;">
             </div>
             <?php endif; ?>
 

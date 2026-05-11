@@ -1,15 +1,147 @@
 <?php
 // security.php - Core security functions and session management
 
+if (!defined('PROJECT_ROOT')) {
+    define('PROJECT_ROOT', dirname(__DIR__));
+}
+
+if (!defined('APP_SCHEME')) {
+    define('APP_SCHEME', getenv('APP_SCHEME') ?: 'http');
+}
+
+if (!defined('APP_HOST')) {
+    define('APP_HOST', getenv('APP_HOST') ?: 'localhost');
+}
+
+if (!defined('APP_PORT')) {
+    define('APP_PORT', getenv('APP_PORT') ?: '8000');
+}
+
+if (!defined('APP_BASE_URL')) {
+    $appPortSuffix = in_array(APP_PORT, ['80', '443'], true) ? '' : ':' . APP_PORT;
+    define('APP_BASE_URL', APP_SCHEME . '://' . APP_HOST . $appPortSuffix);
+}
+
+if (!defined('ML_SERVICE_BASE_URL')) {
+    define('ML_SERVICE_BASE_URL', rtrim(getenv('ML_SERVICE_BASE_URL') ?: 'http://127.0.0.1:5000', '/'));
+}
+
+if (!defined('ML_ANALYZE_URL')) {
+    define('ML_ANALYZE_URL', ML_SERVICE_BASE_URL . '/analyze');
+}
+
+if (!defined('CONVERTER_SCRIPT_PATH')) {
+    define('CONVERTER_SCRIPT_PATH', PROJECT_ROOT . '/convert_file_to_image.py');
+}
+
+if (!defined('DEFAULT_UPLOAD_DIR')) {
+    define('DEFAULT_UPLOAD_DIR', __DIR__ . '/uploads/');
+}
+
+if (!defined('DEFAULT_SESSION_DIR')) {
+    define('DEFAULT_SESSION_DIR', __DIR__ . '/sessions');
+}
+
+function ensureDirectoryExists($dir, $mode = 0750) {
+    if (!is_dir($dir)) {
+        @mkdir($dir, $mode, true);
+    }
+
+    return is_dir($dir) && is_writable($dir);
+}
+
+function getSessionStoragePath() {
+    return DEFAULT_SESSION_DIR;
+}
+
+function getPreferredPythonPath() {
+    $candidatePaths = [
+        PROJECT_ROOT . '/ml-service/.venv/bin/python',
+        PROJECT_ROOT . '/ml-service/.venv/bin/python3',
+    ];
+
+    foreach ($candidatePaths as $candidatePath) {
+        if (file_exists($candidatePath) && is_executable($candidatePath)) {
+            return $candidatePath;
+        }
+    }
+
+    return null;
+}
+
+function isHttpEndpointAvailable($url, $timeoutSeconds = 2) {
+    if (function_exists('curl_init')) {
+        $ch = curl_init($url);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_NOBODY, false);
+        curl_setopt($ch, CURLOPT_TIMEOUT, $timeoutSeconds);
+        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, $timeoutSeconds);
+        curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+        curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $curlError = curl_errno($ch);
+        curl_close($ch);
+
+        return $curlError === 0 && $httpCode >= 200 && $httpCode < 500;
+    }
+
+    $headers = @get_headers($url);
+    if ($headers === false || empty($headers[0])) {
+        return false;
+    }
+
+    return strpos($headers[0], '200') !== false;
+}
+
+function isMlServiceReachable() {
+    return isHttpEndpointAvailable(ML_SERVICE_BASE_URL . '/openapi.json');
+}
+
+function getSystemHealth() {
+    $uploadsDir = defined('UPLOAD_DIR') ? UPLOAD_DIR : DEFAULT_UPLOAD_DIR;
+    $sessionDir = getSessionStoragePath();
+    $pythonPath = getPreferredPythonPath();
+
+    return [
+        'app_base_url' => APP_BASE_URL,
+        'ml_service_url' => ML_SERVICE_BASE_URL,
+        'session_dir' => $sessionDir,
+        'session_ready' => is_dir($sessionDir) && is_writable($sessionDir),
+        'uploads_dir' => $uploadsDir,
+        'uploads_dir_ready' => (is_dir($uploadsDir) && is_writable($uploadsDir)) || (!is_dir($uploadsDir) && is_writable(dirname($uploadsDir))),
+        'converter_script' => CONVERTER_SCRIPT_PATH,
+        'converter_ready' => file_exists(CONVERTER_SCRIPT_PATH),
+        'python_path' => $pythonPath,
+        'python_ready' => $pythonPath !== null,
+        'ml_service_ready' => isMlServiceReachable(),
+        'db_connected' => isset($GLOBALS['conn']) && $GLOBALS['conn'] instanceof mysqli,
+    ];
+}
+
+function enforceCanonicalBaseUrl() {
+    if (PHP_SAPI === 'cli') {
+        return;
+    }
+
+    if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'GET') {
+        return;
+    }
+
+    $expectedHost = APP_HOST . (in_array(APP_PORT, ['80', '443'], true) ? '' : ':' . APP_PORT);
+    $currentHost = $_SERVER['HTTP_HOST'] ?? '';
+
+    if ($currentHost !== '' && strcasecmp($currentHost, $expectedHost) !== 0) {
+        header('Location: ' . APP_BASE_URL . ($_SERVER['REQUEST_URI'] ?? '/'));
+        exit;
+    }
+}
+
 // Start secure session
 function startSecureSession() {
     // Prevent session fixation
     if (session_status() == PHP_SESSION_NONE) {
-        $sessionDir = __DIR__ . '/sessions';
-        if (!is_dir($sessionDir)) {
-            mkdir($sessionDir, 0750, true);
-        }
-        if (is_dir($sessionDir) && is_writable($sessionDir)) {
+        $sessionDir = getSessionStoragePath();
+        if (ensureDirectoryExists($sessionDir, 0750)) {
             session_save_path($sessionDir);
         }
 
@@ -117,6 +249,10 @@ function setSecurityHeaders() {
     
     // Force HTTPS (uncomment when using HTTPS)
     // header("Strict-Transport-Security: max-age=31536000; includeSubDomains");
+}
+
+function getStatusBadgeColor($isReady) {
+    return $isReady ? '#4caf50' : '#ffb74d';
 }
 
 // Rate limiting
