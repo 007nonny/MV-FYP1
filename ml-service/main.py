@@ -24,6 +24,7 @@ TROJAN_LIKE_TAGS = {
     "Malex.gen!J",
     "C2LOP.P",
     "C2LOP.gen!g",
+    "Dialplatform.B",
 }
 
 # ---- Family mapping table (loaded from JSON) ----
@@ -99,9 +100,14 @@ async def analyze(file: UploadFile = File(...)):
         detected_type = idx_to_label[pred_idx]
 
         if confidence < CONFIDENCE_THRESHOLD:
-            # Low confidence — still show the predicted family, but mark as Uncertain
-            trojan_type = "Uncertain"
-            severity = "unknown"
+            # Low confidence — preserve mapped severity when available, but mark as possible
+            if detected_type in FAMILY_MAP:
+                mapped_category, mapped_severity = FAMILY_MAP[detected_type]
+                trojan_type = "Possible " + mapped_category
+                severity = mapped_severity
+            else:
+                trojan_type = "Uncertain"
+                severity = "unknown"
             trojan_subtype = detected_type
         else:
             if detected_type not in TROJAN_LIKE_TAGS and confidence > 0.80:
