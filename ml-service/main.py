@@ -1,11 +1,12 @@
 from fastapi import FastAPI, UploadFile, File
 from fastapi.responses import JSONResponse
 import torch
-import torchvision.transforms as transforms
 from torchvision import models
 from PIL import Image
 import json
 import io
+
+from transforms_config import get_eval_transform
 
 app = FastAPI()
 
@@ -72,11 +73,7 @@ model.load_state_dict(torch.load("/home/kali/Desktop/FYP1/MalwareImageRecognitio
 model.eval()
 
 # ---- Image transform ----
-transform = transforms.Compose([
-    transforms.Resize((224, 224)),
-    transforms.ToTensor(),
-    transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
-])
+transform = get_eval_transform(224)
 
 @app.post("/analyze")
 async def analyze(file: UploadFile = File(...)):

@@ -4,11 +4,13 @@ Test the trained malware classification model
 """
 import torch
 import torch.nn as nn
-from torchvision import models, transforms
+from torchvision import models
 from PIL import Image
 import json
 import os
 import glob
+
+from transforms_config import get_eval_transform
 
 # Configuration
 MODEL_PATH = "/home/kali/Desktop/FYP1/MalwareImageRecognitionFYP1/models/model.pt"
@@ -27,12 +29,7 @@ num_classes = len(labels_dict)
 print(f"Loaded {num_classes} malware classes")
 
 # Image preprocessing
-test_transform = transforms.Compose([
-    transforms.Resize((IMG_SIZE, IMG_SIZE)),
-    transforms.Grayscale(num_output_channels=3),
-    transforms.ToTensor(),
-    transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
-])
+test_transform = get_eval_transform(IMG_SIZE)
 
 # Load model
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")

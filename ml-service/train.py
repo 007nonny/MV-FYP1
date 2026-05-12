@@ -10,8 +10,10 @@ import torch.optim as optim
 from sklearn.metrics import accuracy_score, classification_report, precision_recall_fscore_support
 from sklearn.model_selection import train_test_split
 from torch.utils.data import DataLoader, Dataset
-from torchvision import datasets, models, transforms
+from torchvision import datasets, models
 from tqdm import tqdm
+
+from transforms_config import get_eval_transform, get_train_transform
 
 
 # ---- Configuration ----
@@ -93,21 +95,8 @@ def main():
     assert abs((TRAIN_RATIO + VAL_RATIO + TEST_RATIO) - 1.0) < 1e-8, "Split ratios must sum to 1.0"
 
     # ---- Data transforms ----
-    train_transform = transforms.Compose([
-        transforms.Resize((IMG_SIZE, IMG_SIZE)),
-        transforms.Grayscale(num_output_channels=3),
-        transforms.RandomHorizontalFlip(),
-        transforms.RandomRotation(10),
-        transforms.ToTensor(),
-        transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
-    ])
-
-    eval_transform = transforms.Compose([
-        transforms.Resize((IMG_SIZE, IMG_SIZE)),
-        transforms.Grayscale(num_output_channels=3),
-        transforms.ToTensor(),
-        transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
-    ])
+    train_transform = get_train_transform(IMG_SIZE)
+    eval_transform = get_eval_transform(IMG_SIZE)
 
     # ---- Load full dataset ----
     print("Loading dataset...")

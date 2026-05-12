@@ -5,7 +5,9 @@ import torch
 import torch.nn as nn
 from sklearn.metrics import accuracy_score, precision_recall_fscore_support
 from torch.utils.data import DataLoader
-from torchvision import datasets, models, transforms
+from torchvision import datasets, models
+
+from transforms_config import get_eval_transform
 
 ROOT = Path('/home/kali/Desktop/FYP1/MalwareImageRecognitionFYP1')
 MODEL_PATH = ROOT / 'models' / 'model.pt'
@@ -20,12 +22,7 @@ OUTPUT_PATH = ROOT / 'models' / 'training_metrics.json'
 with LABELS_PATH.open() as f:
     labels = json.load(f)
 
-transform = transforms.Compose([
-    transforms.Resize((224, 224)),
-    transforms.Grayscale(num_output_channels=3),
-    transforms.ToTensor(),
-    transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
-])
+transform = get_eval_transform(224)
 
 device = torch.device('cpu')
 model = models.mobilenet_v2(weights=None)
