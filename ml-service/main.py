@@ -15,6 +15,16 @@ app = FastAPI()
 # Low    = obfuscators or less directly harmful support families
 ALLOWED_SEVERITIES = {"high", "medium", "low"}
 ALLOWED_CATEGORIES = {"Trojan", "Other Malware"}
+TROJAN_LIKE_TAGS = {
+    "Rbot!gen",
+    "Yuner.A",
+    "Agent.FYI",
+    "Autorun.K",
+    "Alueron.gen!J",
+    "Malex.gen!J",
+    "C2LOP.P",
+    "C2LOP.gen!g",
+}
 
 # ---- Family mapping table (loaded from JSON) ----
 with open("/home/kali/Desktop/FYP1/MalwareImageRecognitionFYP1/models/family_mapping.json", "r") as f:
@@ -82,7 +92,7 @@ async def analyze(file: UploadFile = File(...)):
             pred_idx = pred_idx.item()
 
         # Confidence threshold for detection
-        CONFIDENCE_THRESHOLD = 0.50  # 50% confidence required
+        CONFIDENCE_THRESHOLD = 0.70  # 70% confidence required
         
         confidence_pct = f"{confidence * 100:.1f}%"
         
@@ -94,8 +104,11 @@ async def analyze(file: UploadFile = File(...)):
             severity = "unknown"
             trojan_subtype = detected_type
         else:
+            if detected_type not in TROJAN_LIKE_TAGS and confidence > 0.80:
+                trojan_type = "Possible Trojan Variant"
+                severity = "medium"
             # Look up family in mapping table (
-            if detected_type in FAMILY_MAP:
+            elif detected_type in FAMILY_MAP:
                 trojan_type, severity = FAMILY_MAP[detected_type]
             else:
                 trojan_type = "Other Malware"
