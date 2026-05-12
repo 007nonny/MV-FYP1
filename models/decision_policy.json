@@ -1,0 +1,120 @@
+{
+  "method": "validation_threshold_tuning",
+  "source_logits": "/home/kali/Desktop/FYP1/MalwareImageRecognitionFYP1/models/validation_logits.json",
+  "temperature_used": 1.033661127090454,
+  "total_validation_samples": 1389,
+  "selection_reason": "max coverage with accepted_accuracy >= 0.99",
+  "target_accepted_accuracy": 0.99,
+  "default_threshold": 0.7,
+  "default_threshold_metrics": {
+    "threshold": 0.7,
+    "coverage": 0.9971202303815695,
+    "accepted_count": 1385,
+    "rejected_count": 4,
+    "rejection_rate": 0.0028797696184305254,
+    "accepted_accuracy": 0.9855595827102661,
+    "incorrect_accepted": 20
+  },
+  "selected_threshold": 0.87,
+  "selected_threshold_metrics": {
+    "threshold": 0.87,
+    "coverage": 0.8927285817134629,
+    "accepted_count": 1240,
+    "rejected_count": 149,
+    "rejection_rate": 0.10727141828653708,
+    "accepted_accuracy": 0.9967741966247559,
+    "incorrect_accepted": 4
+  },
+  "top_candidates": [
+    {
+      "threshold": 0.87,
+      "coverage": 0.8927285817134629,
+      "accepted_count": 1240,
+      "rejected_count": 149,
+      "rejection_rate": 0.10727141828653708,
+      "accepted_accuracy": 0.9967741966247559,
+      "incorrect_accepted": 4
+    },
+    {
+      "threshold": 0.88,
+      "coverage": 0.8920086393088553,
+      "accepted_count": 1239,
+      "rejected_count": 150,
+      "rejection_rate": 0.1079913606911447,
+      "accepted_accuracy": 0.9967715740203857,
+      "incorrect_accepted": 4
+    },
+    {
+      "threshold": 0.89,
+      "coverage": 0.8912886969042476,
+      "accepted_count": 1238,
+      "rejected_count": 151,
+      "rejection_rate": 0.10871130309575235,
+      "accepted_accuracy": 0.9967690110206604,
+      "incorrect_accepted": 4
+    },
+    {
+      "threshold": 0.9,
+      "coverage": 0.8912886969042476,
+      "accepted_count": 1238,
+      "rejected_count": 151,
+      "rejection_rate": 0.10871130309575235,
+      "accepted_accuracy": 0.9967690110206604,
+      "incorrect_accepted": 4
+    },
+    {
+      "threshold": 0.91,
+      "coverage": 0.89056875449964,
+      "accepted_count": 1237,
+      "rejected_count": 152,
+      "rejection_rate": 0.10943124550035997,
+      "accepted_accuracy": 0.9967663884162903,
+      "incorrect_accepted": 4
+    },
+    {
+      "threshold": 0.92,
+      "coverage": 0.8898488120950324,
+      "accepted_count": 1236,
+      "rejected_count": 153,
+      "rejection_rate": 0.1101511879049676,
+      "accepted_accuracy": 0.9975728392601013,
+      "incorrect_accepted": 3
+    },
+    {
+      "threshold": 0.93,
+      "coverage": 0.8891288696904248,
+      "accepted_count": 1235,
+      "rejected_count": 154,
+      "rejection_rate": 0.11087113030957524,
+      "accepted_accuracy": 0.9975708723068237,
+      "incorrect_accepted": 3
+    },
+    {
+      "threshold": 0.94,
+      "coverage": 0.8869690424766019,
+      "accepted_count": 1232,
+      "rejected_count": 157,
+      "rejection_rate": 0.11303095752339813,
+      "accepted_accuracy": 0.9983766078948975,
+      "incorrect_accepted": 2
+    },
+    {
+      "threshold": 0.95,
+      "coverage": 0.8826493880489561,
+      "accepted_count": 1226,
+      "rejected_count": 163,
+      "rejection_rate": 0.11735061195104392,
+      "accepted_accuracy": 0.9983686804771423,
+      "incorrect_accepted": 2
+    },
+    {
+      "threshold": 0.96,
+      "coverage": 0.8812095032397408,
+      "accepted_count": 1224,
+      "rejected_count": 165,
+      "rejection_rate": 0.11879049676025918,
+      "accepted_accuracy": 0.9983659982681274,
+      "incorrect_accepted": 2
+    }
+  ]
+}

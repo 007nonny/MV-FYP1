@@ -1,0 +1,18 @@
+{
+  "method": "temperature_scaling",
+  "temperature": 1.033661127090454,
+  "validation_samples": 1389,
+  "metrics_before": {
+    "nll": 0.05218847468495369,
+    "ece": 0.0043033333495259285,
+    "brier_score": 0.02744472213089466,
+    "accuracy": 0.9841612577438354
+  },
+  "metrics_after": {
+    "nll": 0.05214622616767883,
+    "ece": 0.005663644522428513,
+    "brier_score": 0.027503464370965958,
+    "accuracy": 0.9841612577438354
+  },
+  "source_logits": "/home/kali/Desktop/FYP1/MalwareImageRecognitionFYP1/models/validation_logits.json"
+}
