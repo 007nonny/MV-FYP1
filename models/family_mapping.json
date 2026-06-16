@@ -1,5 +1,5 @@
 {
-  "Adialer.C":      { "category": "Other Malware", "severity": "Low"    },
+  "Adialer.C":      { "category": "Trojan",        "severity": "Low"    },
   "Agent.FYI":      { "category": "Trojan",        "severity": "High"   },
   "Allaple.A":      { "category": "Other Malware", "severity": "High"   },
   "Allaple.L":      { "category": "Other Malware", "severity": "High"   },
@@ -16,12 +16,12 @@
   "Lolyda.AA3":     { "category": "Trojan",        "severity": "High"   },
   "Lolyda.AT":      { "category": "Trojan",        "severity": "High"   },
   "Malex.gen!J":    { "category": "Trojan",        "severity": "High"   },
-  "Obfuscator.AD":  { "category": "Other Malware", "severity": "Low"    },
+  "Obfuscator.AD":  { "category": "Trojan",        "severity": "Medium" },
   "Rbot!gen":       { "category": "Trojan",        "severity": "High"   },
   "Skintrim.N":     { "category": "Trojan",        "severity": "Medium" },
   "Swizzor.gen!E":  { "category": "Other Malware", "severity": "High"   },
   "Swizzor.gen!I":  { "category": "Other Malware", "severity": "High"   },
-  "VB.AT":          { "category": "Other Malware", "severity": "High"   },
+  "VB.AT":          { "category": "Trojan",        "severity": "Low"    },
   "Wintrim.BX":     { "category": "Trojan",        "severity": "Medium" },
   "Yuner.A":        { "category": "Trojan",        "severity": "High"   }
 }

@@ -54,17 +54,6 @@ SEVERITY_MAPPING = {
     "Malex.gen!J": "High",
     "Wintrim.BX": "High",
 }
-TROJAN_LIKE_TAGS = {
-    "Rbot!gen",
-    "Yuner.A",
-    "Agent.FYI",
-    "Autorun.K",
-    "Alueron.gen!J",
-    "Malex.gen!J",
-    "C2LOP.P",
-    "C2LOP.gen!g",
-    "Dialplatform.B",
-}
 
 # ---- Family mapping table (loaded from JSON) ----
 with open(MODELS_DIR / "family_mapping.json", "r") as f:
@@ -169,7 +158,7 @@ async def analyze(file: UploadFile = File(...)):
         severity = SEVERITY_MAPPING.get(predicted_family, "Unknown")
 
         if confidence < CONFIDENCE_THRESHOLD:
-            # Low confidence — preserve category when available, but use family severity mapping
+            # Low confidence — preserve mapped family category for all MALIMG classes
             if predicted_family in FAMILY_MAP:
                 mapped_category, _ = FAMILY_MAP[predicted_family]
                 trojan_type = "Possible " + mapped_category
@@ -178,10 +167,7 @@ async def analyze(file: UploadFile = File(...)):
                 severity = "Unknown"
             trojan_subtype = predicted_family
         else:
-            if predicted_family not in TROJAN_LIKE_TAGS and confidence > 0.80:
-                trojan_type = "Possible Trojan Variant"
-            # Look up family in mapping table (
-            elif predicted_family in FAMILY_MAP:
+            if predicted_family in FAMILY_MAP:
                 trojan_type, _ = FAMILY_MAP[predicted_family]
             else:
                 trojan_type = "Other Malware"

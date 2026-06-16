@@ -84,7 +84,6 @@ if (isset($_GET['error'])) {
             <li><a href="#history">History</a></li>
             <li><a href="#about">About</a></li>
         </ul>
-        <button class="login-btn">LOGIN</button>
     </nav>
 
     <div class="container">

@@ -1,0 +1,471 @@
+FYP REPORT DRAFT
+Malware Image Recognition and Classification System
+
+====================================================================
+CHAPTER 3: METHODOLOGY
+====================================================================
+
+3.1 Introduction
+This chapter describes the methodology adopted for the design, implementation, and evaluation of the Malware Image Recognition and Classification System. It explains the software development approach selected for the project, the machine learning model employed, the sequence of activities performed in each development phase, and the design artefacts used to guide implementation. The chapter also provides diagram-ready descriptions for the system architecture, process flow, activity sequence, and threat model so that the methodological structure of the project can be clearly communicated in formal academic presentation.
+
+3.2 Software Development Method
+
+3.2.1 Available Development Approaches
+Several software development approaches were considered during the planning stage of the project. The Waterfall model provides clear sequential stages and strong documentation, but it is less adaptable when implementation changes are frequently required. The Prototyping model is suitable when interface refinement and user feedback are important. Agile and iterative approaches support repeated improvement, incremental delivery, and continuous verification.
+
+3.2.2 Selected Development Model
+For this project, an iterative prototyping approach was selected. This choice was appropriate because the system combines multiple technical domains, namely web application development, machine learning inference, malware image preprocessing, database interaction, and security-sensitive file handling. Such a system is unlikely to reach a stable and reliable state through a strictly linear process. Instead, it benefits from repeated refinement in response to runtime findings, classification behaviour, integration issues, and user-facing presentation requirements.
+
+3.2.3 Justification for the Selected Method
+The iterative prototyping model was selected for the following reasons:
+- the machine learning output required repeated validation and interpretation
+- the frontend and backend components had to be integrated incrementally
+- system reliability needed improvement through continuous debugging and retesting
+- security-related controls such as upload validation and CSRF protection required verification in practice
+- confidence interpretation and malware category mapping required refinement after observing real outputs
+
+Accordingly, the project methodology is best characterised as iterative, evaluation-driven, and prototype-oriented.
+
+3.3 Selected Machine Learning Model and Justification
+
+3.3.1 Selected Model
+The machine learning component of the system uses MobileNetV2 as the primary image classification architecture. MobileNetV2 is a lightweight convolutional neural network designed to achieve strong classification performance while remaining computationally efficient.
+
+3.3.2 Rationale for Model Selection
+MobileNetV2 was selected for several academic and practical reasons. First, the project operates on malware image representations, which makes convolutional neural networks a natural choice due to their effectiveness in extracting spatial features from image data. Second, the project was developed and demonstrated in a local environment with moderate computational resources; therefore, a lightweight architecture was preferable to a significantly larger model. Third, the project required a model that could support both acceptable training performance and fast inference during live demonstration.
+
+The use of MobileNetV2 is therefore justified by the following advantages:
+- suitability for image-based classification problems
+- efficient inference under constrained hardware resources
+- compatibility with transfer learning workflows
+- strong balance between performance and model size
+- appropriateness for real-time or near-real-time local inference
+
+3.3.3 Adaptation of the Model to the Project
+Within this project, MobileNetV2 was adapted to classify malware image samples into 25 malware families derived from the MALIMG-style dataset. The classifier layer was modified to match the total number of classes, and the model was trained using a structured train-validation-test split. The trained model was later integrated into the web-based inference service.
+
+3.4 Project Phases and Activities
+
+3.4.1 Requirement Identification and Problem Analysis
+The first phase of the project focused on understanding the problem domain. Malware binaries are difficult to interpret directly using raw byte sequences alone, particularly for non-specialist users. The project therefore aimed to transform malware-related files into image representations and apply a machine learning model to classify them into known malware families. During this phase, the system requirements for upload handling, visualization, classification, security, result presentation, and storage were identified.
+
+3.4.2 Project Planning and Work Breakdown Structure
+The project was organised into a structured sequence of work packages. Although a full graphical Gantt chart is not embedded in this draft, the project planning can be expressed as the following work breakdown structure:
+
+1. Literature review and problem definition
+2. Requirement identification and system planning
+3. Dataset preparation and split verification
+4. Preprocessing and model development
+5. Web frontend implementation
+6. API integration and inference workflow implementation
+7. Database and session fallback support
+8. Security hardening and reliability improvements
+9. Validation-based calibration and threshold tuning
+10. Testing, discussion, and documentation
+
+This structure demonstrates that the project was managed through clear phases rather than ad hoc coding.
+
+3.4.3 Dataset Preparation and Preprocessing
+The dataset used in this project is a MALIMG-style malware image dataset organised into training, validation, and test partitions. The system supports 25 malware families. The preprocessing strategy included image resizing, grayscale-to-three-channel conversion for model compatibility, tensor conversion, and normalization using ImageNet statistics. A shared preprocessing configuration was implemented to ensure consistency across training, evaluation, testing, and inference.
+
+3.4.4 Model Training and Validation
+During the training phase, the model was trained on the training split and monitored using the validation split. The objective of this phase was to learn discriminative features for malware family classification while preventing overfitting through validation-based monitoring. The resulting model artefacts included trained weights, label mappings, and performance metrics.
+
+3.4.5 Web System Design and Backend Integration
+The project was implemented as a web-based prototype. The frontend was developed in PHP and is responsible for user interaction, upload control, conversion flow, and result display. The backend machine learning service was developed in Python using FastAPI. This phase involved integrating the PHP application with the ML API so that uploaded images could be analysed and the returned prediction could be displayed to the user.
+
+3.4.6 Confidence Calibration and Threshold Selection
+An important methodological refinement of the project was the treatment of confidence. Rather than relying solely on raw softmax output, the project extracted validation logits, fitted temperature scaling using validation data, and selected a decision threshold on the same validation set. This process improved the interpretability of confidence values and reduced the risk of presenting uncertain predictions as fully certain.
+
+3.4.7 Interpretation Layer: Category and Severity Mapping
+The trained classifier predicts malware family labels only. Category labels such as Trojan or Other Malware, as well as severity levels such as Low, Medium, and High, were introduced as an interpretation layer after prediction. This mapping was applied consistently across the supported MALIMG families so that the final result presented to the user remained interpretable and aligned with project objectives.
+
+3.4.8 Testing and Iterative Refinement
+Testing was performed continuously throughout development. Functional testing, security-related checks, result interpretation review, and interface validation all contributed to iterative refinement. Several issues, including session handling, database fallback behaviour, confidence interpretation, and category consistency, were identified and corrected during this phase.
+
+3.5 System Design Artefacts
+
+3.5.1 Architecture Diagram Text
+The following description may be used directly to construct the architecture diagram.
+
+Title: Architecture of the Malware Image Recognition and Classification System
+
+Main components:
+1. User
+2. PHP Web Application
+3. FastAPI ML Service
+4. Trained Model and Metadata
+5. Dataset and File Storage
+6. MySQL/MariaDB Database
+
+Component description:
+- User interacts with the PHP Web Application through a browser.
+- PHP Web Application handles file upload, conversion flow, result display, session management, and database interaction.
+- FastAPI ML Service receives the image from the PHP layer and performs preprocessing and inference.
+- Trained Model and Metadata include the MobileNetV2 weights, labels, family mapping, calibration file, and decision policy.
+- Dataset and File Storage contain uploaded files, converted images, logs, session files, and dataset folders.
+- MySQL/MariaDB Database stores analysis results when the database is available.
+
+Suggested diagram connections:
+- User -> PHP Web Application
+- PHP Web Application -> Dataset and File Storage
+- PHP Web Application -> FastAPI ML Service
+- FastAPI ML Service -> Trained Model and Metadata
+- PHP Web Application -> MySQL/MariaDB Database
+- PHP Web Application -> User
+
+3.5.2 Flowchart Diagram Text
+The following description may be used directly to construct the system flowchart.
+
+Title: Flowchart of Malware Analysis Workflow
+
+Flow sequence:
+1. Start
+2. User opens web application
+3. User uploads binary file or malware image
+4. Decision: Is the uploaded file a binary requiring conversion?
+	- If yes: convert binary to image
+	- If no: proceed directly to analysis
+5. Validate uploaded image
+6. Send image to ML service
+7. Preprocess image
+8. Run model inference
+9. Apply calibration and confidence threshold
+10. Map predicted family to category and severity
+11. Decision: Is database storage available?
+	- If yes: save result to database
+	- If no: save result to session fallback
+12. Display result to user
+13. End
+
+3.5.3 Activity Diagram Text
+The following description may be used directly to construct the activity diagram.
+
+Title: Activity Diagram for Malware Image Analysis
+
+Suggested swimlanes:
+- User
+- PHP Web Application
+- ML Service
+- Database/Session Storage
+
+Activity sequence:
+User:
+1. Select file for upload
+2. Submit analysis request
+
+PHP Web Application:
+3. Validate request and uploaded file
+4. If required, convert binary to image
+5. Forward image to ML service
+
+ML Service:
+6. Load and preprocess image
+7. Run MobileNetV2 inference
+8. Apply calibration and threshold logic
+9. Determine malware family, category, severity, and confidence
+10. Return analysis result to PHP layer
+
+Database/Session Storage:
+11. Save result to database if available
+12. Otherwise save result to session fallback
+
+PHP Web Application:
+13. Render results page
+
+User:
+14. View classification result
+
+3.5.4 Threat Model Diagram Text
+The following description may be used directly to construct the threat model diagram.
+
+Title: Threat Model for the Malware Image Recognition and Classification System
+
+Assets:
+- uploaded malware files and images
+- trained model and metadata
+- session data
+- analysis results
+- database records
+
+Threat actors:
+- malicious user
+- unauthorised external requester
+- careless legitimate user
+
+Entry points:
+- file upload forms
+- analysis request endpoint
+- conversion workflow
+- database interaction layer
+- session storage layer
+
+Major threats:
+1. Malicious or invalid file upload
+2. Forged request without valid CSRF token
+3. Path traversal attempt through manipulated filenames
+4. Denial of service through repeated requests
+5. Service interruption caused by database failure
+6. Misleading output caused by inconsistent mapping logic
+
+Mitigations:
+- file type validation
+- upload size restriction
+- CSRF token validation
+- path sanitization
+- prepared statements for database access
+- session fallback when database storage is unavailable
+- validation-based confidence thresholding
+- health checks and startup verification
+
+3.6 Summary
+This chapter has presented the methodology used for the project. An iterative prototyping approach was adopted because it was most appropriate for a system requiring repeated refinement across web development, machine learning inference, security controls, and user-facing interpretation. MobileNetV2 was selected as the core classifier because it offers an appropriate balance between computational efficiency and predictive performance. The chapter also documented the project phases and provided formal diagram-ready descriptions that can be used to construct the required methodology figures.
+
+====================================================================
+CHAPTER 4: SYSTEM DEVELOPMENT
+====================================================================
+
+4.1 Introduction
+This chapter explains the development of the Malware Image Recognition and Classification System from a technical perspective. It covers the software frameworks and dependencies employed, the development environment, installation and configuration procedures, user interface design, system integration, source code management, solution evolution, and deployment configuration. The chapter demonstrates how the methodology described previously was translated into a functioning prototype.
+
+4.2 Frameworks, Dependencies, Environment, Operating System, IDE, and Development Tools
+
+4.2.1 Frontend and Web Layer
+The web application layer was developed using PHP, HTML, and CSS. PHP was selected because it supports server-side request handling, file upload management, session management, and straightforward integration with local database services. HTML and CSS were used to design the web pages and result presentation interface.
+
+4.2.2 Machine Learning Layer
+The machine learning backend was implemented in Python. FastAPI was used to expose the trained classifier as an HTTP-based service. PyTorch and TorchVision were used to build and run the MobileNetV2 model. Pillow was used for image loading and preprocessing, while scikit-learn and NumPy supported evaluation and numerical operations.
+
+4.2.3 Database Layer
+MySQL/MariaDB was used as the persistent storage mechanism for analysis results. Where database storage was temporarily unavailable, session-based fallback was implemented to preserve workflow continuity.
+
+4.2.4 Development Environment
+The project was developed under Linux using Visual Studio Code as the main integrated development environment. Git and GitHub were used for version control and milestone management. A Python virtual environment was used to isolate machine learning dependencies. Runtime validation was supported through terminal-based testing, PHP error logs, database checks, and direct API inspection.
+
+4.3 Installation, Setup, and Configuration
+
+4.3.1 Installation Procedure
+The local setup procedure can be summarised as follows:
+1. Prepare the project in the local workspace.
+2. Create and activate the Python virtual environment under the ML service directory.
+3. Install the Python dependencies required by the ML service.
+4. Ensure the dataset directories and model artefacts are present.
+5. Ensure PHP is available for the frontend.
+6. Ensure MySQL/MariaDB is available for database-backed result storage.
+7. Launch the PHP and ML services.
+
+4.3.2 Configuration Details
+The prototype uses a local configuration in which:
+- the PHP application runs at http://localhost:8000
+- the ML service runs at http://127.0.0.1:5000
+- model artefacts are loaded from the models directory
+- uploads, sessions, and logs are maintained in local filesystem directories
+
+Additional reliability features include health checks, startup scripts, local session hardening, and secure upload validation.
+
+4.4 User Interface and User Experience Design
+The user interface was designed for simplicity, clarity, and academic demonstration. The prototype follows a dark-themed visual style that emphasises the analysis result panel and the malware image preview. The workflow was intentionally kept short so that a user can move quickly from upload to classification result.
+
+The principal interface goals were:
+- provide a clear and linear analysis workflow
+- present malware family and severity clearly
+- show confidence in an understandable form
+- support rapid use during live presentation
+- ensure that errors are handled gracefully without confusing the user
+
+4.5 Integration Between Frontend and Backend
+The frontend and backend are integrated through an API-based communication model. The PHP layer accepts the uploaded image and forwards it to the ML service. The ML service performs inference and returns the prediction as JSON. The PHP layer then stores the result either in the database or, if necessary, in the session, before rendering the final result page.
+
+This approach allows the system to remain modular. The PHP application is responsible for interaction and presentation, while the FastAPI service is responsible for classification logic.
+
+4.6 Source Code Versioning and Repository Management
+Version control was handled through Git, with GitHub used as the remote repository. The use of version control was especially important because the system underwent repeated refinement in both the frontend and ML service. Repository management enabled safe checkpointing of improvements such as confidence calibration, threshold tuning, mapping corrections, and reliability fixes.
+
+4.7 Solution Evolution and Implementation Versions
+The system evolved through multiple implementation stages. Important milestones included:
+- initial web frontend and model integration
+- correction of runtime and conversion errors
+- database fallback support
+- startup automation and health checking
+- severity mapping enhancement
+- confidence calibration using validation data
+- threshold tuning using validation performance
+- category consistency fixes across all MALIMG families
+
+This incremental evolution reflects the chosen iterative development methodology.
+
+4.8 Deployment Environment
+The deployment environment is local and intended for development and academic demonstration. The deployed components consist of:
+- local PHP application server
+- local FastAPI inference service
+- local MySQL/MariaDB database
+- local file storage for uploads, logs, and sessions
+
+This deployment model was selected because it offers simplicity, controllability, and suitability for offline academic use. However, it also means that the present prototype should be regarded as a local demonstrator rather than a production deployment.
+
+4.9 Summary
+This chapter has described the practical development of the system, including the technical stack, environment, setup, interface design, integration model, repository management, iterative improvements, and deployment configuration. The resulting system is a complete local prototype that integrates malware image preprocessing, model inference, secure request handling, and result presentation.
+
+====================================================================
+CHAPTER 5: RESULTS AND DISCUSSION
+====================================================================
+
+5.1 Introduction
+This chapter presents the results obtained from the implementation and evaluation of the Malware Image Recognition and Classification System. It discusses the main forms of testing conducted, examines the observed performance of the trained model, and evaluates the reliability and interpretability of the final system output.
+
+5.2 Types of Testing
+
+5.2.1 Functional Testing
+Functional testing was conducted to verify that the major system features operated as intended. These features included file upload, binary-to-image conversion, machine learning inference, result display, result storage, and fallback operation.
+
+Representative functional test cases are listed below.
+
+Test Case ID: FT001
+Description: Upload malware image for classification
+Category: Functional
+Input: Valid malware visualization image uploaded by the user
+Expected Output: The system classifies the image and displays the result fields
+Actual Output: The system classified the image successfully and rendered the result page correctly
+Result: Pass
+
+Test Case ID: FT002
+Description: Convert binary file to image
+Category: Functional
+Input: Valid executable file uploaded for conversion
+Expected Output: The system converts the binary into an image suitable for analysis
+Actual Output: The conversion process succeeded and the generated image could be analysed
+Result: Pass
+
+Test Case ID: FT003
+Description: Store result in database
+Category: Functional
+Input: Successful classification while the database is available
+Expected Output: The system stores the result in the database and displays it from persistent storage
+Actual Output: The result could be stored and retrieved through the normal results workflow
+Result: Pass
+
+Test Case ID: FT004
+Description: Preserve workflow during database unavailability
+Category: Functional
+Input: Successful classification while the database is unavailable
+Expected Output: The system stores the latest result in the active session and continues to display it
+Actual Output: The fallback workflow remained operational and prevented user-facing failure
+Result: Pass
+
+Test Case ID: FT005
+Description: Enforce consistent category interpretation for all MALIMG families
+Category: Functional
+Input: Malware image classified into a mapped family such as Obfuscator.AD
+Expected Output: The displayed malware category follows the unified family mapping policy
+Actual Output: The result now follows a consistent mapping source for all supported families
+Result: Pass
+
+5.2.2 Security Testing and Discussion
+The project incorporated several practical security-oriented controls appropriate to a prototype handling uploaded files and local web requests. These controls include CSRF protection, file validation, upload size restriction, path sanitization, session protection, and prepared database operations.
+
+Representative security test cases include the following.
+
+Test Case ID: ST001
+Description: Reject invalid uploaded image type
+Category: Integrity / Availability
+Input: Unsupported or malformed file uploaded for analysis
+Expected Output: The system rejects the file before processing
+Actual Output: File validation prevented invalid input from being processed
+Result: Pass
+
+Test Case ID: ST002
+Description: Reject request with invalid CSRF token
+Category: Integrity
+Input: Forged or incomplete POST request without a valid token
+Expected Output: The request is blocked and not processed
+Actual Output: The request was rejected and handled as a security event
+Result: Pass
+
+Test Case ID: ST003
+Description: Maintain service continuity during database failure
+Category: Availability
+Input: Successful analysis while database storage is unavailable
+Expected Output: The system continues through fallback mode instead of failing fatally
+Actual Output: The session fallback mechanism preserved the workflow
+Result: Pass
+
+Formal enterprise-grade vulnerability scanning was not the main focus of the prototype. Nevertheless, the project adopted a defensive implementation approach and manual verification of the main upload, request, and fallback surfaces.
+
+5.2.3 User Acceptance and Output Evaluation
+User-facing evaluation in this project is primarily concerned with the clarity and usefulness of the output. The results page displays the predicted malware family, interpreted category, severity level, confidence value, and the analysed image preview. This presentation format supports understandable and demonstrable output during evaluation.
+
+Observed strengths include:
+- clear end-to-end workflow
+- readable result panel structure
+- visible malware image preview
+- more honest handling of uncertain predictions after calibration and threshold tuning
+
+5.3 Results and Discussion
+The trained model achieved strong overall classification performance on the dataset used in this study. The best validation accuracy was approximately 98.07%, while the final test accuracy was approximately 98.36%. The macro F1-score was approximately 94.40%, and the weighted F1-score was approximately 97.82%.
+
+These findings suggest that the selected MobileNetV2 architecture is effective for malware family recognition on the prepared MALIMG-style dataset. The results support the feasibility of applying image-based deep learning techniques to malware family classification under the chosen problem setting.
+
+At the same time, the project also revealed an important distinction between benchmark performance and real deployment behaviour. Although dataset-based performance is high, live uploaded or converted samples do not always produce equally high confidence. This indicates the presence of distributional differences between evaluation data and certain real inputs. To address this issue, the project introduced validation-based temperature scaling and a tuned decision threshold so that the reported confidence became more academically defensible.
+
+Another important result concerns interpretability. Since the model predicts malware families rather than high-level categories or severity labels, an additional interpretation layer was needed. During implementation, inconsistencies in category mapping were identified and corrected, leading to a more coherent and policy-consistent final output.
+
+5.4 Summary
+This chapter has discussed the evaluation results of the project from functional, security-related, and interpretability perspectives. The system achieved strong classification performance, supported the required workflows, and provided a more trustworthy result interpretation through calibration and threshold tuning. Overall, the findings demonstrate that the project met its intended technical and academic objectives.
+
+====================================================================
+CHAPTER 6: CONCLUSIONS AND RECOMMENDATIONS
+====================================================================
+
+6.1 Introduction
+This chapter presents the final conclusions of the project. It summarises the principal achievements, discusses how the objectives were fulfilled, identifies the main limitations of the present work, and offers recommendations for future improvement and broader practical extension.
+
+6.2 Conclusion of the Project
+The Malware Image Recognition and Classification System was successfully developed as a working academic prototype. The system can convert malware-related files into image representations, classify them into known malware families, assign interpretable category and severity labels, and present the final results through a web interface. The integration of the PHP frontend with the FastAPI-based machine learning backend resulted in a coherent end-to-end system rather than a standalone experimental model.
+
+6.3 Discussion of Findings
+The findings of this study indicate that MobileNetV2 is an appropriate classifier for the selected problem and dataset context. The model achieved strong validation and test performance, supporting the use of malware image representations for family-level classification. The study also demonstrated that confidence reporting requires careful treatment. By introducing calibration and threshold tuning, the project improved the honesty and reliability of result interpretation. Additionally, the work showed that category and severity presentation must be governed by a consistent interpretation policy to avoid contradictory outputs.
+
+6.4 Achievement of Objectives
+Objective 1: Develop a malware image classification prototype
+This objective was achieved through the implementation of a complete web-based malware analysis workflow.
+
+Objective 2: Classify malware images into known families
+This objective was achieved by training and deploying a MobileNetV2 model supporting 25 malware families.
+
+Objective 3: Provide interpretable results to the user
+This objective was achieved by presenting family, category, severity, confidence, and image preview on the results page.
+
+Objective 4: Improve confidence reliability
+This objective was achieved through validation-logit extraction, temperature scaling, and threshold tuning.
+
+Objective 5: Maintain prototype reliability during demonstration
+This objective was achieved through startup scripts, health checks, secure upload handling, and session fallback support.
+
+6.5 Limitations
+The project is subject to several limitations:
+1. the current deployment is local and demonstration-oriented
+2. severity labels are policy-based and not learned from behavioural ground truth
+3. live uploaded samples may differ from the validation distribution
+4. the interpretation layer depends on the quality of the family mapping policy
+5. the prototype has not yet been extended to scalable production deployment
+6. local service configuration remains a practical dependency for full operation
+
+6.6 Recommendations for Future Work
+Future improvements should include:
+1. training on a larger and more diverse malware dataset
+2. introducing unknown or out-of-distribution detection
+3. refining severity assignment using cited malware taxonomy sources
+4. adding reliability diagrams and confusion matrices to the evaluation chapter
+5. improving the frontend with richer visual analytics
+6. automating database setup and schema management
+7. extending the system toward malware behaviour tagging or multi-label analysis
+8. exploring containerized or cloud deployment strategies
+
+6.7 Future Expansion
+Potential later enhancements include drag-and-drop upload, bulk analysis, downloadable reports, model comparison dashboards, role-based access control, and cloud-hosted storage and inference services.
+
+6.8 Commercialization Potential
+Although the current implementation is an academic prototype, the concept has practical potential for educational laboratories, malware research support environments, cyber security training platforms, and lightweight malware triage systems. Any move toward commercialization would require stronger production security, broader validation, scalable deployment architecture, and operational monitoring.
+
+6.9 Final Summary
+In summary, the project demonstrates that malware image classification can be implemented as a practical and interpretable prototype by combining web technologies, machine learning inference, confidence calibration, and structured result presentation. The prototype achieved its main objectives and provides a solid foundation for further academic and technical development.

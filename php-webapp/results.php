@@ -11,8 +11,10 @@ setSecurityHeaders();
 
 $uploadId = $_GET['id'] ?? 0;
 $useSessionFallback = (($_GET['source'] ?? '') === 'session');
+$dbAvailable = isset($conn) && ($conn instanceof mysqli);
+$usingSessionResult = (($useSessionFallback || !$dbAvailable) && isset($_SESSION['last_analysis']));
 
-if (($useSessionFallback || !isset($conn) || !($conn instanceof mysqli)) && isset($_SESSION['last_analysis'])) {
+if ($usingSessionResult) {
     $data = $_SESSION['last_analysis'];
     $data['id'] = $data['id'] ?? 0;
     $data['uploaded_at'] = $data['uploaded_at'] ?? date('Y-m-d H:i:s');
@@ -137,7 +139,6 @@ if (!empty($data['filename'])) {
             <li><a href="analyze.php#history">History</a></li>
             <li><a href="#about">About</a></li>
         </ul>
-        <button class="login-btn">LOGIN</button>
     </nav>
 
     <div class="container">
@@ -146,9 +147,13 @@ if (!empty($data['filename'])) {
             <p>Machine Learning classification results</p>
         </div>
 
-        <?php if ($useSessionFallback): ?>
+        <?php if ($usingSessionResult && !$dbAvailable): ?>
             <div style="background: rgba(255, 183, 77, 0.12); border: 1px solid #ffb74d; color: #ffe0b2; padding: 1rem 1.25rem; border-radius: 8px; margin-bottom: 1.5rem;">
                 Results are being shown from the active session because database storage is not available.
+            </div>
+        <?php elseif ($usingSessionResult && $useSessionFallback): ?>
+            <div style="background: rgba(100, 181, 246, 0.12); border: 1px solid #64b5f6; color: #bbdefb; padding: 1rem 1.25rem; border-radius: 8px; margin-bottom: 1.5rem;">
+                This page is showing a previously saved session result. Run a new analysis to save the latest result to the database.
             </div>
         <?php endif; ?>
 

@@ -41,7 +41,6 @@ $allCriticalReady = $health['session_ready']
             <li><a href="analyze.php">Threat Analysis</a></li>
             <li><a href="health.php" class="active">System Health</a></li>
         </ul>
-        <button class="login-btn">LOGIN</button>
     </nav>
 
     <div class="container">
