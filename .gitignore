@@ -28,3 +28,6 @@ Thumbs.db
 Dataset-1/train/
 Dataset-1/val/
 Dataset-1/test/
+
+# Demo runtime files
+.demo/
