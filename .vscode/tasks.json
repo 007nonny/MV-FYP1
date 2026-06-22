@@ -1,0 +1,14 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Run validation logits inspection",
+			"type": "shell",
+			"command": "/home/kali/Desktop/FYP1/MalwareImageRecognitionFYP1/ml-service/.venv/bin/python",
+			"args": [
+				"/home/kali/Desktop/FYP1/MalwareImageRecognitionFYP1/ml-service/inspect_val_logits.py"
+			],
+			"isBackground": false
+		}
+	]
+}

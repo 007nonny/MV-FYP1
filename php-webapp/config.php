@@ -8,10 +8,10 @@ ini_set('log_errors', 1);
 ini_set('error_log', __DIR__ . '/logs/error.log');
 error_reporting(E_ALL);
 
-// Database credentials - USE ENVIRONMENT VARIABLES IN PRODUCTION
+// Database credentials (password must come from environment)
 $servername = getenv('DB_HOST') ?: "localhost";
 $username = getenv('DB_USER') ?: "malware_user";
-$password = getenv('DB_PASS') ?: "Change_This_Password_123!";
+$password = getenv('DB_PASS') ?: "";
 $dbname = getenv('DB_NAME') ?: "malware_db";
 
 // Create connection with error handling
